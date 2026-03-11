@@ -1,20 +1,21 @@
 import Icon from "../components/Icon";
+import { formatGs } from "../utils/currency";
 
 const monthLabels = ["Ene", "Feb", "Mar", "Abr", "May", "Jun"];
 
 const stats = [
-  { icon: "payments", iconWrap: "bg-emerald-100 text-emerald-600", value: "$1,250.00", label: "Ventas hoy" },
+  { icon: "payments", iconWrap: "bg-emerald-100 text-emerald-600", value: formatGs(9180000), label: "Ventas hoy" },
   { icon: "warning", iconWrap: "bg-amber-100 text-amber-600", value: "12 Articulos", label: "Bajos en stock" },
   { icon: "assignment_late", iconWrap: "bg-blue-100 text-blue-600", value: "8 Pedidos", label: "Pendientes" },
   { icon: "person_add", iconWrap: "bg-violet-100 text-violet-600", value: "15 Nuevos", label: "Clientes" },
 ];
 
 const sales = [
-  { icon: "directions_car", title: "Frenos Brembo Z2", customer: "Carlos Mendez", amount: "$145.00", status: "Completado", statusClass: "text-emerald-600" },
-  { icon: "oil_barrel", title: "Aceite Sintetico 5W30", customer: "Lucia Torres", amount: "$42.50", status: "Completado", statusClass: "text-emerald-600" },
-  { icon: "battery_charging_full", title: "Bateria LTH Pro", customer: "Juan Perez", amount: "$189.99", status: "Pendiente", statusClass: "text-amber-500" },
-  { icon: "tire_repair", title: "Llantas Michelin R17", customer: 'Taller "El Rayo"', amount: "$560.00", status: "Completado", statusClass: "text-emerald-600" },
-  { icon: "lightbulb", title: "Faros LED H4", customer: "Roberto Diaz", amount: "$35.20", status: "Completado", statusClass: "text-emerald-600" },
+  { icon: "directions_car", title: "Frenos Brembo Z2", customer: "Carlos Mendez", amount: formatGs(1060000), status: "Completado", statusClass: "text-emerald-600" },
+  { icon: "oil_barrel", title: "Aceite Sintetico 5W30", customer: "Lucia Torres", amount: formatGs(312000), status: "Completado", statusClass: "text-emerald-600" },
+  { icon: "battery_charging_full", title: "Bateria LTH Pro", customer: "Juan Perez", amount: formatGs(1385000), status: "Pendiente", statusClass: "text-amber-500" },
+  { icon: "tire_repair", title: "Llantas Michelin R17", customer: 'Taller "El Rayo"', amount: formatGs(4080000), status: "Completado", statusClass: "text-emerald-600" },
+  { icon: "lightbulb", title: "Faros LED H4", customer: "Roberto Diaz", amount: formatGs(257000), status: "Completado", statusClass: "text-emerald-600" },
 ];
 
 export default function Dashboard() {
@@ -36,7 +37,7 @@ export default function Dashboard() {
           </div>
 
           <div className="flex flex-col gap-2">
-            <p className="text-3xl font-extrabold tracking-tight">$45,200.00</p>
+            <p className="text-3xl font-extrabold tracking-tight">{formatGs(332450000)}</p>
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-700">
                 <Icon name="trending_up" className="text-xs" /> +12.5%

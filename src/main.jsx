@@ -5,8 +5,11 @@ import './styles/index.css'
 import App from './App.jsx'
 import AppLayout from './layouts/AppLayout.jsx'
 import Dashboard from './pages/Dashboard.jsx'
+import Customers from './pages/Customers.jsx'
 import Login from './pages/Login.jsx'
 import PlaceholderPage from './pages/PlaceholderPage.jsx'
+import Products from './pages/Products.jsx'
+import Sales from './pages/Sales.jsx'
 import ProtectedRoute from './routes/ProtectedRoute.jsx'
 
 createRoot(document.getElementById('root')).render(
@@ -19,9 +22,9 @@ createRoot(document.getElementById('root')).render(
           <Route element={<ProtectedRoute />}>
             <Route element={<AppLayout />}>
               <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/stock" element={<PlaceholderPage title="Inventario" />} />
-              <Route path="/ventas" element={<PlaceholderPage title="Ventas" />} />
-              <Route path="/clientes" element={<PlaceholderPage title="Clientes" />} />
+              <Route path="/stock" element={<Products />} />
+              <Route path="/ventas" element={<Sales />} />
+              <Route path="/clientes" element={<Customers />} />
               <Route path="/compras" element={<PlaceholderPage title="Compras" />} />
               <Route path="/reportes" element={<PlaceholderPage title="Reportes" />} />
               <Route path="/ajustes" element={<PlaceholderPage title="Ajustes" />} />
