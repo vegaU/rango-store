@@ -1,129 +1,124 @@
+import { useEffect, useState } from "react";
 import Icon from "../components/Icon";
+import FormModal from "../components/FormModal";
+import ConfirmDialog from "../components/ConfirmDialog";
+import { del, get, post } from "../lib/api";
+import { isAdmin } from "../lib/permissions";
 import { formatGs } from "../utils/currency";
 
-const customerStats = [
-  {
-    icon: "groups",
-    value: "842",
-    label: "Clientes activos",
-    tone: "bg-sky-100 text-sky-700",
-  },
-  {
-    icon: "workspace_premium",
-    value: "126",
-    label: "Mayoristas VIP",
-    tone: "bg-violet-100 text-violet-700",
-  },
-  {
-    icon: "schedule",
-    value: "59",
-    label: "Seguimiento hoy",
-    tone: "bg-amber-100 text-amber-700",
-  },
-  {
-    icon: "payments",
-    value: formatGs(241500000),
-    label: "Facturacion mensual",
-    tone: "bg-emerald-100 text-emerald-700",
-  },
-];
+function buildCustomerStats(customers, sales) {
+  const monthStart = new Date();
+  monthStart.setDate(1);
+  monthStart.setHours(0, 0, 0, 0);
 
-const featuredCustomers = [
-  {
-    name: "Taller El Rayo",
-    type: "Mayorista",
-    code: "CLI-018",
-    city: "Asuncion",
-    balance: formatGs(45500000),
-    lastOrder: "Hace 2 dias",
-    health: "Alta actividad",
-    tone: "from-cyan-500/15 via-white to-white",
-    icon: "garage",
-  },
-  {
-    name: "Lucia Torres",
-    type: "Retail frecuente",
-    code: "CLI-104",
-    city: "San Lorenzo",
-    balance: formatGs(3520000),
-    lastOrder: "Hoy",
-    health: "Compra recurrente",
-    tone: "from-emerald-500/15 via-white to-white",
-    icon: "person",
-  },
-  {
-    name: "Distribuidora Norte",
-    type: "Corporativo",
-    code: "CLI-007",
-    city: "Lambare",
-    balance: formatGs(91000000),
-    lastOrder: "Hace 5 dias",
-    health: "Credito abierto",
-    tone: "from-rose-500/15 via-white to-white",
-    icon: "apartment",
-  },
-];
+  const salesThisMonth = sales.filter((sale) => {
+    const createdAt = sale.createdAt ? new Date(sale.createdAt) : null;
+    return createdAt && !Number.isNaN(createdAt.getTime()) && createdAt >= monthStart;
+  });
 
-const customerRows = [
-  {
-    name: "Carlos Mendez",
-    segment: "Retail",
-    contact: "0981 450 211",
-    city: "Fernando de la Mora",
-    orders: 18,
-    spend: formatGs(14100000),
-    status: "Activo",
-    statusClass: "bg-emerald-100 text-emerald-700",
-  },
-  {
-    name: 'Taller "Ruta 2"',
-    segment: "Mayorista",
-    contact: "0982 771 330",
-    city: "Capiata",
-    orders: 41,
-    spend: formatGs(61800000),
-    status: "Prioritario",
-    statusClass: "bg-sky-100 text-sky-700",
-  },
-  {
-    name: "Roberto Diaz",
-    segment: "Retail",
-    contact: "0971 889 004",
-    city: "Asuncion",
-    orders: 7,
-    spend: formatGs(2860000),
-    status: "Dormido",
-    statusClass: "bg-amber-100 text-amber-700",
-  },
-  {
-    name: "ServiFreno Center",
-    segment: "Mayorista",
-    contact: "0984 551 199",
-    city: "Luque",
-    orders: 29,
-    spend: formatGs(42400000),
-    status: "Activo",
-    statusClass: "bg-emerald-100 text-emerald-700",
-  },
-  {
-    name: "Juan Perez",
-    segment: "Retail",
-    contact: "0972 663 810",
-    city: "San Antonio",
-    orders: 11,
-    spend: formatGs(6310000),
-    status: "Seguimiento",
-    statusClass: "bg-violet-100 text-violet-700",
-  },
-];
+  const monthlyBilling = salesThisMonth.reduce((sum, sale) => sum + (Number(sale.total) || 0), 0);
+  const customersWithSales = new Set(sales.map((sale) => sale.customerId).filter(Boolean));
+  const followUpToday = 0;
 
-const touchpoints = [
-  { name: "Taller El Rayo", action: "Llamar por pedido pendiente", at: "10:30", icon: "call" },
-  { name: "Roberto Diaz", action: "Enviar promo de frenos", at: "12:00", icon: "campaign" },
-  { name: "Distribuidora Norte", action: "Revisar linea de credito", at: "15:45", icon: "account_balance_wallet" },
-];
+  return [
+    { icon: "groups", value: customers.length.toString(), label: "Clientes activos", tone: "bg-sky-100 text-sky-700" },
+    { icon: "workspace_premium", value: customersWithSales.size.toString(), label: "Con compras", tone: "bg-violet-100 text-violet-700" },
+    { icon: "schedule", value: followUpToday.toString(), label: "Seguimiento hoy", tone: "bg-amber-100 text-amber-700" },
+    { icon: "payments", value: formatGs(monthlyBilling), label: "Facturacion mensual", tone: "bg-emerald-100 text-emerald-700" },
+  ];
+}
 
 export default function Customers() {
+  const canDeleteCustomers = isAdmin();
+  const [customers, setCustomers] = useState([]);
+  const [sales, setSales] = useState([]);
+  const [stats, setStats] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [submitError, setSubmitError] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  function syncCustomers(nextCustomers, nextSales) {
+    setCustomers(nextCustomers);
+    setSales(nextSales);
+    setStats(buildCustomerStats(nextCustomers, nextSales));
+  }
+
+  useEffect(() => {
+    async function loadData() {
+      setLoading(true);
+      setError("");
+
+      try {
+        const customerRows = await get("/customers");
+        const safeCustomers = Array.isArray(customerRows) ? customerRows : [];
+
+        let safeSales = [];
+        try {
+          const salesRows = await get("/sales");
+          safeSales = Array.isArray(salesRows) ? salesRows : [];
+        } catch (salesError) {
+          console.error("Error cargando ventas para metricas de clientes:", salesError);
+        }
+
+        syncCustomers(safeCustomers, safeSales);
+      } catch (requestError) {
+        console.error("Error cargando clientes:", requestError);
+        setError("No se pudieron cargar los clientes. Intenta de nuevo.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadData();
+  }, []);
+
+  async function handleCreateCustomer(formData) {
+    setIsSubmitting(true);
+    setSubmitError("");
+
+    try {
+      const newCustomer = await post("/customers", {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+      });
+
+      syncCustomers([newCustomer, ...customers], sales);
+      setIsModalOpen(false);
+    } catch (requestError) {
+      console.error("Error creando cliente:", requestError);
+      setSubmitError("No se pudo guardar el cliente. Verifica si el email ya existe.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleDeleteCustomer() {
+    if (!selectedCustomer) {
+      return;
+    }
+
+    setIsDeleting(true);
+
+    try {
+      await del(`/customers/${selectedCustomer.id}`);
+      syncCustomers(customers.filter((customer) => customer.id !== selectedCustomer.id), sales);
+      setIsDeleteDialogOpen(false);
+      setSelectedCustomer(null);
+    } catch (requestError) {
+      console.error("Error eliminando cliente:", requestError);
+      setError("No se pudo eliminar el cliente. Intenta de nuevo.");
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-[radial-gradient(circle_at_top_right,_rgba(34,197,94,0.18),_transparent_28%),linear-gradient(135deg,_#ffffff,_#f1fff7_55%,_#f8fafc)] p-6 shadow-sm dark:border-slate-800 dark:bg-[radial-gradient(circle_at_top_right,_rgba(34,197,94,0.2),_transparent_28%),linear-gradient(135deg,_#0f172a,_#0d201a_55%,_#111827)] lg:p-8">
@@ -134,162 +129,118 @@ export default function Customers() {
               Clientes ordenados por valor, frecuencia y seguimiento.
             </h1>
             <p className="mt-3 max-w-xl text-sm leading-6 text-slate-600 dark:text-slate-300">
-              Vista pensada para ventas de repuestos: talleres, clientes recurrentes, cuentas mayoristas y acciones de
-              fidelizacion en una sola pantalla.
+              Vista conectada a la base real para revisar clientes, historial comercial y facturacion mensual.
             </p>
+            {error && <p className="mt-3 text-sm font-medium text-amber-700 dark:text-amber-300">{error}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:min-w-[420px]">
-            {customerStats.map((item) => (
+            {stats.map((item) => (
               <StatPill key={item.label} {...item} />
             ))}
           </div>
         </div>
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[1.7fr_1fr]">
-        <div className="space-y-6">
-          <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <h2 className="text-lg font-bold text-slate-900 dark:text-white">Clientes destacados</h2>
-                <p className="text-sm text-slate-500">Cuentas con mas movimiento o valor estrategico este mes.</p>
-              </div>
-
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800">
-                  <Icon className="text-slate-400" name="search" />
-                  <input
-                    className="w-full border-none bg-transparent p-0 text-sm text-slate-700 placeholder:text-slate-400 focus:ring-0 dark:text-slate-200 sm:w-52"
-                    placeholder="Buscar cliente o telefono"
-                    type="text"
-                  />
-                </div>
-
-                <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
-                  <Icon className="text-slate-400" name="filter_alt" />
-                  <span>Segmento: Todos</span>
-                </div>
-
-                <button className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500" type="button">
-                  <Icon className="text-base" name="person_add" />
-                  Nuevo cliente
-                </button>
-              </div>
+      <section className="grid gap-6">
+        <div className="rounded-[24px] border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">Base de clientes</h2>
+              <p className="text-sm text-slate-500">Seguimiento de compras, contacto y estado comercial.</p>
             </div>
 
-            <div className="mt-5 grid gap-4 lg:grid-cols-3">
-              {featuredCustomers.map((customer) => (
-                <FeaturedCard key={customer.code} {...customer} />
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-[24px] border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2 className="text-lg font-bold text-slate-900 dark:text-white">Base de clientes</h2>
-                <p className="text-sm text-slate-500">Seguimiento de compras, contacto y estado comercial.</p>
-              </div>
-
-              <button className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-600" type="button">
-                Exportar cartera
-                <Icon className="text-base" name="download" />
-              </button>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-left">
-                <thead>
-                  <tr className="border-b border-slate-200 text-xs uppercase tracking-[0.18em] text-slate-400 dark:border-slate-800">
-                    <th className="px-5 py-4 font-semibold">Cliente</th>
-                    <th className="px-5 py-4 font-semibold">Segmento</th>
-                    <th className="px-5 py-4 font-semibold">Contacto</th>
-                    <th className="px-5 py-4 font-semibold">Ciudad</th>
-                    <th className="px-5 py-4 font-semibold">Pedidos</th>
-                    <th className="px-5 py-4 font-semibold">Facturacion</th>
-                    <th className="px-5 py-4 font-semibold">Estado</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {customerRows.map((customer) => (
-                    <tr key={customer.name} className="border-b border-slate-100 text-sm last:border-0 dark:border-slate-800/80">
-                      <td className="px-5 py-4">
-                        <span className="font-semibold text-slate-900 dark:text-white">{customer.name}</span>
-                      </td>
-                      <td className="px-5 py-4 text-slate-600 dark:text-slate-300">{customer.segment}</td>
-                      <td className="px-5 py-4 text-slate-600 dark:text-slate-300">{customer.contact}</td>
-                      <td className="px-5 py-4 text-slate-600 dark:text-slate-300">{customer.city}</td>
-                      <td className="px-5 py-4">
-                        <span className="inline-flex min-w-10 justify-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-200">
-                          {customer.orders}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4 font-semibold text-slate-900 dark:text-white">{customer.spend}</td>
-                      <td className="px-5 py-4">
-                        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${customer.statusClass}`}>
-                          {customer.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <aside className="space-y-6">
-          <div className="rounded-[24px] border border-slate-200 bg-slate-950 p-5 text-white shadow-sm dark:border-slate-800">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-[0.22em] text-emerald-300">Agenda comercial</p>
-                <h2 className="mt-2 text-xl font-bold">Seguimientos del dia</h2>
-              </div>
-              <div className="flex size-11 items-center justify-center rounded-2xl bg-white/10">
-                <Icon name="support_agent" />
-              </div>
-            </div>
-
-            <div className="mt-6 space-y-4">
-              {touchpoints.map((item) => (
-                <div key={item.name} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="mt-0.5 flex size-9 items-center justify-center rounded-xl bg-white/10 text-emerald-200">
-                      <Icon className="text-base" name={item.icon} />
-                    </div>
-                    <div>
-                      <p className="font-semibold">{item.name}</p>
-                      <p className="mt-1 text-sm text-slate-300">{item.action}</p>
-                      <p className="mt-2 text-xs uppercase tracking-[0.18em] text-emerald-300">{item.at}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <button className="mt-6 w-full rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-100" type="button">
-              Ver pipeline comercial
+            <button
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500"
+              onClick={() => {
+                setSubmitError("");
+                setIsModalOpen(true);
+              }}
+              type="button"
+            >
+              <Icon className="text-base" name="person_add" />
+              Nuevo cliente
             </button>
           </div>
 
-          <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white">Segmentacion</h2>
-              <Icon className="text-slate-400" name="pie_chart" />
-            </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-left">
+              <thead>
+                <tr className="border-b border-slate-200 text-xs uppercase tracking-[0.18em] text-slate-400 dark:border-slate-800">
+                  <th className="px-5 py-4 font-semibold">Cliente</th>
+                  <th className="px-5 py-4 font-semibold">Email</th>
+                  <th className="px-5 py-4 font-semibold">Telefono</th>
+                  <th className="px-5 py-4 font-semibold">Direccion</th>
+                  <th className="px-5 py-4 font-semibold">Acciones</th>
+                </tr>
+              </thead>
 
-            <div className="mt-5 space-y-4">
-              <SegmentRow label="Retail frecuente" percentage="38%" color="bg-emerald-500" />
-              <SegmentRow label="Mayoristas" percentage="27%" color="bg-sky-500" />
-              <SegmentRow label="Talleres aliados" percentage="19%" color="bg-violet-500" />
-              <SegmentRow label="Corporativos" percentage="10%" color="bg-amber-500" />
-              <SegmentRow label="Dormidos" percentage="6%" color="bg-rose-500" />
-            </div>
+              <tbody>
+                {customers.map((customer) => (
+                  <tr key={customer.id} className="border-b border-slate-100 text-sm last:border-0 dark:border-slate-800/80">
+                    <td className="px-5 py-4">
+                      <span className="font-semibold text-slate-900 dark:text-white">{customer.name}</span>
+                    </td>
+                    <td className="px-5 py-4 text-slate-600 dark:text-slate-300">{customer.email || "N/A"}</td>
+                    <td className="px-5 py-4 text-slate-600 dark:text-slate-300">{customer.phone || "N/A"}</td>
+                    <td className="px-5 py-4 text-slate-600 dark:text-slate-300">{customer.address || "N/A"}</td>
+                    <td className="px-5 py-4">
+                      <button
+                        className="inline-flex items-center gap-1 rounded-lg bg-rose-100 px-2.5 py-1.5 text-xs font-semibold text-rose-700 transition hover:bg-rose-200 dark:bg-rose-900/30 dark:text-rose-300"
+                        disabled={!canDeleteCustomers}
+                        onClick={() => {
+                          setSelectedCustomer(customer);
+                          setIsDeleteDialogOpen(true);
+                        }}
+                        type="button"
+                      >
+                        <Icon className="text-sm" name="delete" />
+                        Eliminar
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {customers.length === 0 && (
+                  <tr>
+                    <td className="px-5 py-8 text-center text-sm text-slate-500 dark:text-slate-400" colSpan="5">
+                      {loading ? "Cargando clientes..." : "No hay clientes para mostrar. Crea uno nuevo para comenzar."}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
-        </aside>
+        </div>
       </section>
+
+      <FormModal
+        fields={[
+          { name: "name", label: "Nombre del cliente", placeholder: "Ej: Taller El Rayo", required: true },
+          { name: "email", label: "Email", placeholder: "cliente@example.com", type: "email", required: true },
+          { name: "phone", label: "Telefono", placeholder: "Ej: 0981 450 211" },
+          { name: "address", label: "Direccion", placeholder: "Ej: Fernando de la Mora" },
+        ]}
+        isLoading={isSubmitting}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleCreateCustomer}
+        submitLabel="Crear cliente"
+        title="Nuevo cliente"
+      />
+      {submitError && <p className="text-sm font-medium text-rose-600 dark:text-rose-400">{submitError}</p>}
+
+      <ConfirmDialog
+        isDangerous
+        isLoading={isDeleting}
+        isOpen={canDeleteCustomers && isDeleteDialogOpen}
+        message={`Estas seguro de que deseas eliminar "${selectedCustomer?.name}"? Esta accion no se puede deshacer.`}
+        onCancel={() => {
+          setIsDeleteDialogOpen(false);
+          setSelectedCustomer(null);
+        }}
+        onConfirm={handleDeleteCustomer}
+        title="Eliminar cliente"
+      />
     </div>
   );
 }
@@ -303,55 +254,5 @@ function StatPill({ icon, value, label, tone }) {
       <p className="text-xl font-black text-slate-900 dark:text-white">{value}</p>
       <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-300">{label}</p>
     </article>
-  );
-}
-
-function FeaturedCard({ name, type, code, city, balance, lastOrder, health, tone, icon }) {
-  return (
-    <article className={`rounded-[24px] border border-slate-200 bg-gradient-to-br ${tone} p-4 shadow-sm dark:border-slate-700 dark:from-slate-900 dark:via-slate-900 dark:to-slate-950`}>
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex size-12 items-center justify-center rounded-2xl bg-slate-950 text-white dark:bg-white dark:text-slate-950">
-          <Icon name={icon} />
-        </div>
-        <span className="rounded-full bg-white/80 px-2.5 py-1 text-xs font-bold text-slate-700 shadow-sm dark:bg-slate-800 dark:text-slate-200">
-          {type}
-        </span>
-      </div>
-
-      <div className="mt-5">
-        <p className="text-lg font-bold text-slate-900 dark:text-white">{name}</p>
-        <p className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-500">{code}</p>
-      </div>
-
-      <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
-        <InfoChip icon="location_on" label={city} />
-        <InfoChip icon="payments" label={balance} />
-        <InfoChip icon="shopping_cart" label={lastOrder} />
-        <InfoChip icon="favorite" label={health} />
-      </div>
-    </article>
-  );
-}
-
-function InfoChip({ icon, label }) {
-  return (
-    <div className="flex items-center gap-2 rounded-2xl bg-white/80 px-3 py-2 text-slate-700 shadow-sm dark:bg-slate-800 dark:text-slate-200">
-      <Icon className="text-base text-slate-400" name={icon} />
-      <span className="text-xs font-semibold">{label}</span>
-    </div>
-  );
-}
-
-function SegmentRow({ label, percentage, color }) {
-  return (
-    <div>
-      <div className="mb-2 flex items-center justify-between text-sm">
-        <span className="font-semibold text-slate-700 dark:text-slate-200">{label}</span>
-        <span className="text-slate-500">{percentage}</span>
-      </div>
-      <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-800">
-        <div className={`h-2 rounded-full ${color}`} style={{ width: percentage }} />
-      </div>
-    </div>
   );
 }

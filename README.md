@@ -1,16 +1,24 @@
-# React + Vite
+# Rango Store
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## PostgREST
 
-Currently, two official plugins are available:
+1. Crea un archivo `.env` a partir de `.env.example`.
+2. Define `VITE_POSTGREST_URL` con la URL base de tu servicio PostgREST.
+3. Si tu API usa un schema distinto de `public`, ajusta `VITE_POSTGREST_SCHEMA`.
+4. Si el gateway exige API key o JWT estatico, carga `VITE_POSTGREST_API_KEY`.
+5. Si el recurso no se llama `products`, cambia `VITE_POSTGREST_PRODUCTS_RESOURCE`.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+La ruta `/stock` ya intenta leer `id,name,sku,category,brand,stock,price,location` desde PostgREST. Si la conexion falla o faltan variables, la app mantiene datos de ejemplo para no romper la interfaz.
 
-## React Compiler
+## NestJS
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+El backend NestJS vive en `backend/`.
 
-## Expanding the ESLint configuration
+1. Crea `backend/.env` a partir de `backend/.env.example`.
+2. Ajusta `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD` y deja `DB_NAME=rango_store`.
+3. Instala dependencias del frontend con `npm install`.
+4. Instala dependencias del backend con `npm --prefix backend install`.
+5. Levanta el frontend con `npm run dev`.
+6. Levanta el backend con `npm run backend:dev`.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+El backend expone `GET http://localhost:3001/api/health`, usa TypeORM para conectarse a PostgreSQL y ya tiene CORS habilitado para `http://localhost:5173`.

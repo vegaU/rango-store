@@ -1,29 +1,46 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Icon from "../components/Icon";
+import { post } from "../lib/api";
+import { getToken, saveSession } from "../lib/auth";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (localStorage.getItem("token")) {
+    if (getToken()) {
       navigate("/dashboard");
     }
   }, [navigate]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email || !password) {
       setError("Por favor completa ambos campos");
       return;
     }
 
-    localStorage.setItem("token", "demo_token");
-    navigate("/dashboard");
+    setIsSubmitting(true);
+    setError("");
+
+    try {
+      const session = await post("/auth/login", {
+        email,
+        password,
+      });
+
+      saveSession(session);
+      navigate("/dashboard");
+    } catch {
+      setError("Credenciales invalidas");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -72,8 +89,8 @@ export default function Login() {
             </div>
           </div>
 
-          <button className="w-full rounded-md bg-primary py-2 font-semibold text-white transition hover:bg-primary/90" type="submit">
-            Acceder
+          <button className="w-full rounded-md bg-primary py-2 font-semibold text-white transition hover:bg-primary/90 disabled:opacity-60" disabled={isSubmitting} type="submit">
+            {isSubmitting ? "Validando..." : "Acceder"}
           </button>
         </form>
       </div>

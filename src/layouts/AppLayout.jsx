@@ -19,10 +19,7 @@ export default function AppLayout() {
         </div>
 
         <footer className="mt-auto border-t border-slate-200 bg-white/70 px-4 py-4 text-xs text-slate-500 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400 lg:px-8">
-          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-            <p>Rango Store Dashboard</p>
-            <p>Actualizado en tiempo real para sucursal principal</p>
-          </div>
+          <p className="text-center">Rango Store © 2026 - Actualizado en tiempo real</p>
         </footer>
 
         <div className="h-16 lg:hidden" />
