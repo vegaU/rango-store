@@ -26,14 +26,14 @@ function mapProduct(row, categories = []) {
   const priceValue = Number(row.price) || 0;
 
   let status = "Estable";
-  let statusClass = "bg-emerald-100 text-emerald-700";
+  let statusClass = "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-300 ring-1 ring-emerald-500/15";
 
   if (stock <= 3) {
-    status = "Critico";
-    statusClass = "bg-rose-100 text-rose-700";
+    status = "Crítico";
+    statusClass = "bg-rose-500/10 text-rose-600 dark:bg-rose-500/20 dark:text-rose-300 ring-1 ring-rose-500/15";
   } else if (stock <= 8) {
     status = "Reponer";
-    statusClass = "bg-amber-100 text-amber-700";
+    statusClass = "bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-300 ring-1 ring-amber-500/15";
   }
 
   return {
@@ -330,61 +330,60 @@ export default function Products() {
               {!loading && spotlightProducts.length === 0 && <p className="text-sm text-slate-500">Sin productos para mostrar.</p>}
             </div>
           </div>
-
-          <div className="rounded-[24px] border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
+          <div className="rounded-3xl border border-slate-200/60 bg-white/80 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/60 backdrop-blur-md overflow-hidden">
+            <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-5 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h2 className="text-lg font-bold text-slate-900 dark:text-white">Inventario por producto</h2>
-                <p className="text-sm text-slate-500">Control rapido de stock, categoria y estado de reposicion.</p>
+                <h2 className="text-base font-extrabold text-slate-900 dark:text-white sm:text-lg">Inventario por Producto</h2>
+                <p className="text-xs text-slate-400 dark:text-slate-500">Control rápido de stock, categoría y reposición en tiempo real.</p>
               </div>
             </div>
 
             <div className="overflow-x-auto">
               <table className="min-w-full text-left">
                 <thead>
-                  <tr className="border-b border-slate-200 text-xs uppercase tracking-[0.18em] text-slate-400 dark:border-slate-800">
-                    <th className="px-5 py-4 font-semibold">Producto</th>
-                    <th className="px-5 py-4 font-semibold">Categoria</th>
-                    <th className="px-5 py-4 font-semibold">Stock</th>
-                    <th className="px-5 py-4 font-semibold">Estado</th>
-                    <th className="px-5 py-4 font-semibold">Precio</th>
-                    <th className="px-5 py-4 font-semibold">Acciones</th>
+                  <tr className="border-b border-slate-200/60 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:border-slate-800">
+                    <th className="px-5 py-4">Producto</th>
+                    <th className="px-5 py-4">Categoría</th>
+                    <th className="px-5 py-4">Stock</th>
+                    <th className="px-5 py-4">Estado</th>
+                    <th className="px-5 py-4">Precio</th>
+                    <th className="px-5 py-4">Acciones</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
                   {products.map((product) => (
-                    <tr key={product.id} className="border-b border-slate-100 text-sm last:border-0 dark:border-slate-800/80">
-                      <td className="px-5 py-4">
+                    <tr key={product.id} className="premium-row text-sm hover:bg-slate-50/40 dark:hover:bg-slate-850/15">
+                      <td className="px-5 py-4.5">
                         <div className="flex flex-col">
-                          <span className="font-semibold text-slate-900 dark:text-white">{product.name}</span>
-                          <span className="text-xs text-slate-500">{product.sku}</span>
+                          <span className="font-extrabold text-slate-900 dark:text-white">{product.name}</span>
+                          <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">{product.sku}</span>
                         </div>
                       </td>
-                      <td className="px-5 py-4 text-slate-600 dark:text-slate-300">{product.category}</td>
-                      <td className="px-5 py-4">
-                        <span className="inline-flex min-w-10 justify-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                      <td className="px-5 py-4.5 font-medium text-slate-500 dark:text-slate-400">{product.category}</td>
+                      <td className="px-5 py-4.5">
+                        <span className="inline-flex min-w-10 justify-center rounded-xl bg-slate-100 px-3 py-1.5 text-xs font-black text-slate-700 dark:bg-slate-800 dark:text-slate-200 ring-1 ring-slate-200/50 dark:ring-slate-700/50">
                           {product.stock}
                         </span>
                       </td>
-                      <td className="px-5 py-4">
-                        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${product.statusClass}`}>
+                      <td className="px-5 py-4.5">
+                        <span className={`inline-flex rounded-xl px-3 py-1.5 text-xs font-black tracking-wide ${product.statusClass}`}>
                           {product.status}
                         </span>
                       </td>
-                      <td className="px-5 py-4 font-semibold text-slate-900 dark:text-white">{product.price}</td>
-                      <td className="px-5 py-4">
+                      <td className="px-5 py-4.5 font-black text-slate-900 dark:text-white">{product.price}</td>
+                      <td className="px-5 py-4.5">
                         <div className="flex gap-2">
                           <button
-                            className="inline-flex items-center gap-1 rounded-lg bg-sky-100 px-2.5 py-1.5 text-xs font-semibold text-sky-700 transition hover:bg-sky-200 dark:bg-sky-900/30 dark:text-sky-300"
+                            className="inline-flex items-center gap-1.5 rounded-xl bg-sky-50 px-3 py-2 text-xs font-bold text-sky-700 transition-all hover:bg-sky-100 hover:scale-102 active:scale-98 dark:bg-sky-950/20 dark:text-sky-300 dark:hover:bg-sky-900/30"
                             disabled={!canManageProducts}
                             onClick={() => openEditModal(product)}
                             type="button"
                           >
-                            <Icon className="text-sm" name="edit" />
+                            <Icon className="text-base" name="edit" />
                             Editar
                           </button>
                           <button
-                            className="inline-flex items-center gap-1 rounded-lg bg-rose-100 px-2.5 py-1.5 text-xs font-semibold text-rose-700 transition hover:bg-rose-200 dark:bg-rose-900/30 dark:text-rose-300"
+                            className="inline-flex items-center gap-1.5 rounded-xl bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700 transition-all hover:bg-rose-100 hover:scale-102 active:scale-98 dark:bg-rose-950/20 dark:text-rose-300 dark:hover:bg-rose-900/30"
                             disabled={!canManageProducts}
                             onClick={() => {
                               setSelectedProduct(product);
@@ -392,7 +391,7 @@ export default function Products() {
                             }}
                             type="button"
                           >
-                            <Icon className="text-sm" name="delete" />
+                            <Icon className="text-base" name="delete" />
                             Eliminar
                           </button>
                         </div>
@@ -401,7 +400,7 @@ export default function Products() {
                   ))}
                   {products.length === 0 && (
                     <tr>
-                      <td className="px-5 py-8 text-center text-sm text-slate-500 dark:text-slate-400" colSpan="6">
+                      <td className="px-5 py-8 text-center text-sm font-semibold text-slate-400 dark:text-slate-500" colSpan="6">
                         {loading ? "Cargando productos..." : "No hay productos para mostrar. Crea uno nuevo para comenzar."}
                       </td>
                     </tr>

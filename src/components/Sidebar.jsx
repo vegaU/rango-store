@@ -5,7 +5,7 @@ import { canAccessRoute } from "../lib/permissions";
 const navItems = [
   ["dashboard", "Dashboard", "/dashboard"],
   ["inventory_2", "Inventario", "/stock"],
-  ["category", "Categorias", "/categorias"],
+  ["category", "Categorías", "/categorias"],
   ["shopping_cart", "Ventas", "/ventas"],
   ["receipt_long", "Compras", "/compras"],
   ["group", "Clientes", "/clientes"],
@@ -17,31 +17,43 @@ function SidebarContent({ onClose }) {
   const visibleNavItems = navItems.filter(([, , to]) => canAccessRoute(to));
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex items-center gap-3 p-6">
-        <div className="flex size-10 items-center justify-center rounded-lg bg-primary text-white">
-          <Icon name="settings_input_component" />
+    <div className="flex h-full flex-col bg-gradient-to-b from-white to-slate-50/50 dark:from-[#0b0f19] dark:to-[#0f172a]">
+      {/* Brand Header */}
+      <div className="flex items-center gap-3 px-6 py-7 border-b border-slate-100 dark:border-slate-800/60">
+        <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-indigo-600 text-white shadow-lg shadow-primary/25 ring-2 ring-primary/20">
+          <Icon name="settings_input_component" className="text-xl" />
         </div>
-        <h1 className="text-xl font-bold tracking-tight">Rango Store</h1>
+        <div>
+          <h1 className="text-lg font-black tracking-tight bg-gradient-to-r from-slate-900 to-indigo-950 bg-clip-text text-transparent dark:from-white dark:to-indigo-200">
+            Rango Store
+          </h1>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-primary/80 dark:text-primary">
+            Control Panel
+          </p>
+        </div>
       </div>
 
-      <nav className="flex-1 px-4 py-4">
-        <ul className="space-y-2">
+      {/* Navigation */}
+      <nav className="flex-1 px-3 py-6 overflow-y-auto">
+        <ul className="space-y-1.5">
           {visibleNavItems.map(([icon, label, to]) => (
             <li key={label}>
               <NavLink
                 className={({ isActive }) =>
-                  `flex items-center gap-3 rounded-lg px-4 py-3 transition-colors ${
+                  `group flex items-center gap-3 rounded-xl py-3 px-4 transition-all duration-200 ${
                     isActive
-                      ? "bg-primary/10 font-bold text-primary"
-                      : "text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+                      ? "bg-primary/8 font-bold text-primary shadow-sm border-l-4 border-primary pl-3 dark:bg-primary/10"
+                      : "text-slate-500 pl-4 hover:bg-slate-100 hover:text-slate-800 hover:pl-5.5 dark:text-slate-400 dark:hover:bg-slate-800/50 dark:hover:text-white"
                   }`
                 }
                 onClick={onClose}
                 to={to}
               >
-                <Icon name={icon} />
-                <span>{label}</span>
+                <Icon
+                  name={icon}
+                  className="transition-transform duration-200 group-hover:scale-110"
+                />
+                <span className="text-sm font-medium tracking-wide">{label}</span>
               </NavLink>
             </li>
           ))}
@@ -54,13 +66,18 @@ function SidebarContent({ onClose }) {
 export default function Sidebar({ mobileOpen = false, onClose }) {
   return (
     <>
-      <aside className="fixed left-0 top-0 z-20 hidden h-full w-64 flex-col border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-background-dark lg:flex">
+      <aside className="fixed left-0 top-0 z-20 hidden h-full w-64 flex-col border-r border-slate-200/80 bg-white shadow-sm dark:border-slate-800/60 dark:bg-[#0b0f19] lg:flex">
         <SidebarContent />
       </aside>
 
       <div className={`fixed inset-0 z-40 lg:hidden ${mobileOpen ? "block" : "hidden"}`}>
-        <button aria-label="Cerrar menu lateral" className="absolute inset-0 bg-black/40" onClick={onClose} type="button" />
-        <aside className="relative h-full w-72 max-w-[85vw] border-r border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-background-dark">
+        <button
+          aria-label="Cerrar menu lateral"
+          className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300"
+          onClick={onClose}
+          type="button"
+        />
+        <aside className="relative h-full w-72 max-w-[85vw] border-r border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-[#0b0f19] transition-transform duration-300">
           <SidebarContent onClose={onClose} />
         </aside>
       </div>

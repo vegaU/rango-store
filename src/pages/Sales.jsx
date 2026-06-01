@@ -381,21 +381,21 @@ export default function Sales() {
 
             <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {filteredProducts.map((product) => (
-                <article key={product.id} className="rounded-[22px] border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/70">
+                <article key={product.id} className="group rounded-[24px] border border-slate-200 bg-slate-50/50 p-5 dark:border-slate-800/70 dark:bg-slate-950/20 hover:-translate-y-1 hover:shadow-md transition-all duration-300">
                   <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-bold text-slate-900 dark:text-white">{product.name}</p>
-                      <p className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-500">SKU-{product.id}</p>
+                    <div className="min-w-0">
+                      <p className="font-extrabold text-slate-900 dark:text-white truncate">{product.name}</p>
+                      <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">SKU-{product.id}</p>
                     </div>
-                    <span className="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-slate-700 shadow-sm dark:bg-slate-900 dark:text-slate-200">
+                    <span className="shrink-0 rounded-xl bg-white px-2.5 py-1 text-xs font-black text-slate-700 shadow-sm dark:bg-slate-900 dark:text-slate-350 ring-1 ring-slate-250/20 dark:ring-slate-700/50">
                       {product.stock} uds
                     </span>
                   </div>
 
-                  <p className="mt-4 text-lg font-black text-slate-900 dark:text-white">{formatGs(product.priceValue)}</p>
+                  <p className="mt-4 text-lg font-black text-primary dark:text-indigo-400">{formatGs(product.priceValue)}</p>
 
                   <button
-                    className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-400 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-4 py-2.5 text-sm font-bold text-white transition-all hover:from-orange-400 hover:to-amber-400 hover:shadow-md hover:shadow-orange-500/10 active:scale-98 disabled:cursor-not-allowed disabled:opacity-50"
                     disabled={product.stock <= 0}
                     onClick={() => addToCart(product)}
                     type="button"
@@ -406,56 +406,58 @@ export default function Sales() {
                 </article>
               ))}
               {!filteredProducts.length && (
-                <p className="text-sm text-slate-500 dark:text-slate-400">{loading ? "Cargando productos..." : "No hay productos que coincidan con la busqueda."}</p>
+                <div className="col-span-full py-8 text-center text-sm font-semibold text-slate-400 dark:text-slate-500">
+                  {loading ? "Cargando catálogo..." : "No hay productos que coincidan con la búsqueda."}
+                </div>
               )}
             </div>
           </div>
 
-          <div className="rounded-[24px] border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <div className="rounded-3xl border border-slate-200/60 bg-white/80 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/60 backdrop-blur-md overflow-hidden">
             <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h2 className="text-lg font-bold text-slate-900 dark:text-white">Ventas recientes</h2>
-                <p className="text-sm text-slate-500">Consulta ventas guardadas e imprime el ticket cuando lo necesites.</p>
+                <h2 className="text-base font-extrabold text-slate-900 dark:text-white sm:text-lg">Ventas Recientes</h2>
+                <p className="text-xs text-slate-400 dark:text-slate-500">Consulta ventas guardadas e imprime tickets al instante.</p>
               </div>
             </div>
 
             <div className="overflow-x-auto">
               <table className="min-w-full text-left">
                 <thead>
-                  <tr className="border-b border-slate-200 text-xs uppercase tracking-[0.18em] text-slate-400 dark:border-slate-800">
-                    <th className="px-5 py-4 font-semibold">ID</th>
-                    <th className="px-5 py-4 font-semibold">Cliente</th>
-                    <th className="px-5 py-4 font-semibold">Total</th>
-                    <th className="px-5 py-4 font-semibold">Fecha</th>
-                    <th className="px-5 py-4 font-semibold">Acciones</th>
+                  <tr className="border-b border-slate-200/60 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:border-slate-800">
+                    <th className="px-5 py-4">ID</th>
+                    <th className="px-5 py-4">Cliente</th>
+                    <th className="px-5 py-4">Total</th>
+                    <th className="px-5 py-4">Fecha</th>
+                    <th className="px-5 py-4">Acciones</th>
                   </tr>
                 </thead>
 
-                <tbody>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
                   {sales.map((sale) => (
-                    <tr key={sale.id} className="border-b border-slate-100 text-sm last:border-0 dark:border-slate-800/80">
-                    <td className="px-5 py-4 font-semibold text-slate-900 dark:text-white">VTA-{sale.id}</td>
-                    <td className="px-5 py-4 text-slate-600 dark:text-slate-300">
-                      {customerById.get(sale.customerId) ??
-                        parseTicketPayload(sale.notes).walkInCustomerName ??
-                        (sale.customerId === 0 ? "Cliente ocasional" : `Cliente #${sale.customerId ?? "N/A"}`)}
-                    </td>
-                      <td className="px-5 py-4 font-semibold text-slate-900 dark:text-white">{formatGs(Number(sale.total) || 0)}</td>
-                      <td className="px-5 py-4 text-slate-600 dark:text-slate-300">
+                    <tr key={sale.id} className="premium-row text-sm hover:bg-slate-50/40 dark:hover:bg-slate-850/15">
+                      <td className="px-5 py-4.5 font-extrabold text-slate-900 dark:text-white">VTA-{sale.id}</td>
+                      <td className="px-5 py-4.5 font-medium text-slate-600 dark:text-slate-350">
+                        {customerById.get(sale.customerId) ??
+                          parseTicketPayload(sale.notes).walkInCustomerName ??
+                          (sale.customerId === 0 ? "Cliente ocasional" : `Cliente #${sale.customerId ?? "N/A"}`)}
+                      </td>
+                      <td className="px-5 py-4.5 font-black text-slate-900 dark:text-white">{formatGs(Number(sale.total) || 0)}</td>
+                      <td className="px-5 py-4.5 text-slate-500 dark:text-slate-400">
                         {sale.createdAt ? new Date(sale.createdAt).toLocaleDateString("es-PY") : "-"}
                       </td>
-                      <td className="px-5 py-4">
+                      <td className="px-5 py-4.5">
                         <div className="flex gap-2">
                           <button
-                            className="inline-flex items-center gap-1 rounded-lg bg-sky-100 px-2.5 py-1.5 text-xs font-semibold text-sky-700 transition hover:bg-sky-200 dark:bg-sky-900/30 dark:text-sky-300"
+                            className="inline-flex items-center gap-1.5 rounded-xl bg-sky-50 px-3 py-2 text-xs font-bold text-sky-700 transition-all hover:bg-sky-100 hover:scale-102 active:scale-98 dark:bg-sky-950/20 dark:text-sky-300 dark:hover:bg-sky-900/30"
                             onClick={() => printTicket(sale)}
                             type="button"
                           >
-                            <Icon className="text-sm" name="print" />
+                            <Icon className="text-base" name="print" />
                             Ticket
                           </button>
                           <button
-                            className="inline-flex items-center gap-1 rounded-lg bg-rose-100 px-2.5 py-1.5 text-xs font-semibold text-rose-700 transition hover:bg-rose-200 dark:bg-rose-900/30 dark:text-rose-300"
+                            className="inline-flex items-center gap-1.5 rounded-xl bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700 transition-all hover:bg-rose-100 hover:scale-102 active:scale-98 dark:bg-rose-950/20 dark:text-rose-300 dark:hover:bg-rose-900/30"
                             disabled={!canDeleteSales}
                             onClick={() => {
                               setSelectedSale(sale);
@@ -463,7 +465,7 @@ export default function Sales() {
                             }}
                             type="button"
                           >
-                            <Icon className="text-sm" name="delete" />
+                            <Icon className="text-base" name="delete" />
                             Eliminar
                           </button>
                         </div>
@@ -472,7 +474,7 @@ export default function Sales() {
                   ))}
                   {sales.length === 0 && (
                     <tr>
-                      <td className="px-5 py-8 text-center text-sm text-slate-500 dark:text-slate-400" colSpan="5">
+                      <td className="px-5 py-8 text-center text-sm font-semibold text-slate-400 dark:text-slate-500" colSpan="5">
                         {loading ? "Cargando ventas..." : "No hay ventas para mostrar. Crea una nueva venta para comenzar."}
                       </td>
                     </tr>
@@ -484,29 +486,29 @@ export default function Sales() {
         </div>
 
         <aside className="space-y-6">
-          <div className="rounded-[24px] border border-slate-200 bg-slate-950 p-5 text-white shadow-sm dark:border-slate-800">
-            <div className="flex items-center justify-between">
+          <div className="rounded-[32px] border border-slate-200 bg-slate-950 p-6 text-white shadow-xl dark:border-slate-800">
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div>
-                <p className="text-xs uppercase tracking-[0.22em] text-orange-300">Caja activa</p>
-                <h2 className="mt-2 text-xl font-bold">Carrito de compras</h2>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-orange-300">Caja Activa</p>
+                <h2 className="mt-1 text-lg font-black tracking-tight">Carrito de compras</h2>
               </div>
-              <div className="flex size-11 items-center justify-center rounded-2xl bg-white/10">
-                <Icon name="shopping_cart" />
+              <div className="flex size-11 items-center justify-center rounded-2xl bg-white/10 shadow-sm text-orange-350">
+                <Icon name="shopping_cart" className="text-xl" />
               </div>
             </div>
 
-            <div className="mt-6 space-y-4">
+            <div className="mt-6 space-y-5">
               <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-200">Cliente</label>
+                <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-slate-400">Cliente</label>
                 <select
-                  className="w-full rounded-2xl border border-white/10 bg-white/10 px-3 py-2 text-sm text-white outline-none"
+                  className="w-full rounded-xl border border-white/10 bg-white/10 px-3.5 py-2.5 text-sm text-white outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all"
                   onChange={(event) => setSelectedCustomerId(event.target.value)}
                   value={selectedCustomerId}
                 >
-                  <option className="bg-white text-slate-900" value="">Seleccionar cliente</option>
-                  <option className="bg-white text-slate-900" value="walk-in">Cliente ocasional</option>
+                  <option className="bg-slate-900 text-white" value="">Seleccionar cliente</option>
+                  <option className="bg-slate-900 text-white" value="walk-in">Cliente ocasional</option>
                   {customers.map((customer) => (
-                    <option className="bg-white text-slate-900" key={customer.id} value={customer.id}>
+                    <option className="bg-slate-900 text-white" key={customer.id} value={customer.id}>
                       {customer.name}
                     </option>
                   ))}
@@ -514,10 +516,10 @@ export default function Sales() {
               </div>
 
               {selectedCustomerId === "walk-in" && (
-                <div>
-                  <label className="mb-2 block text-sm font-semibold text-slate-200">Nombre de referencia</label>
+                <div className="animate-fade-in duration-200">
+                  <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-slate-400">Nombre de referencia</label>
                   <input
-                    className="w-full rounded-2xl border border-white/10 bg-white/10 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-400"
+                    className="w-full rounded-xl border border-white/10 bg-white/10 px-3.5 py-2.5 text-sm text-white outline-none placeholder:text-slate-600 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all"
                     onChange={(event) => setWalkInCustomerName(event.target.value)}
                     placeholder="Ej: Cliente mostrador"
                     type="text"
@@ -527,75 +529,88 @@ export default function Sales() {
               )}
 
               <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-200">Notas</label>
+                <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-slate-400">Notas de la Venta</label>
                 <textarea
-                  className="min-h-24 w-full rounded-2xl border border-white/10 bg-white/10 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-400"
+                  className="min-h-24 w-full rounded-xl border border-white/10 bg-white/10 px-3.5 py-2.5 text-sm text-white outline-none placeholder:text-slate-650 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all resize-none"
                   onChange={(event) => setSaleNotes(event.target.value)}
-                  placeholder="Observaciones para la venta o la impresion"
+                  placeholder="Observaciones para la venta o la impresión..."
                   value={saleNotes}
                 />
               </div>
 
-              <div className="space-y-3">
+              {/* Cart List Container */}
+              <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
                 {cart.map((item) => (
-                  <div key={item.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <div key={item.id} className="rounded-2xl border border-white/10 bg-white/5 p-4 hover:bg-white/8 hover:border-white/15 transition-all">
                     <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="font-semibold">{item.name}</p>
-                        <p className="mt-1 text-sm text-slate-300">{formatGs(item.priceValue)} por unidad</p>
+                      <div className="min-w-0">
+                        <p className="font-extrabold text-sm text-white truncate">{item.name}</p>
+                        <p className="mt-1 text-xs text-slate-400">{formatGs(item.priceValue)} c/u</p>
                       </div>
                       <button
-                        className="text-slate-300 transition hover:text-white"
+                        className="text-slate-400 hover:text-rose-400 transition-colors duration-150 shrink-0"
                         onClick={() => removeFromCart(item.id)}
                         type="button"
+                        title="Quitar"
                       >
-                        <Icon name="close" />
+                        <Icon name="close" className="text-lg" />
                       </button>
                     </div>
 
                     <div className="mt-4 flex items-center justify-between">
-                      <div className="flex items-center gap-2 rounded-full bg-white/10 px-2 py-1">
-                        <button className="text-white" onClick={() => updateQuantity(item.id, item.quantity - 1)} type="button">
-                          <Icon name="remove" />
+                      <div className="flex items-center gap-1 bg-white/10 rounded-xl p-1">
+                        <button className="flex size-7 items-center justify-center rounded-lg text-white hover:bg-white/10 transition-colors" onClick={() => updateQuantity(item.id, item.quantity - 1)} type="button">
+                          <Icon name="remove" className="text-sm" />
                         </button>
-                        <span className="min-w-8 text-center text-sm font-bold">{item.quantity}</span>
-                        <button className="text-white" onClick={() => updateQuantity(item.id, item.quantity + 1)} type="button">
-                          <Icon name="add" />
+                        <span className="min-w-7 text-center text-xs font-black">{item.quantity}</span>
+                        <button className="flex size-7 items-center justify-center rounded-lg text-white hover:bg-white/10 transition-colors" onClick={() => updateQuantity(item.id, item.quantity + 1)} type="button">
+                          <Icon name="add" className="text-sm" />
                         </button>
                       </div>
-                      <p className="text-sm font-bold">{formatGs(item.quantity * item.priceValue)}</p>
+                      <p className="text-sm font-black text-orange-300">{formatGs(item.quantity * item.priceValue)}</p>
                     </div>
                   </div>
                 ))}
 
-                {!cart.length && <p className="text-sm text-slate-300">El carrito esta vacio. Agrega productos para comenzar.</p>}
+                {!cart.length && (
+                  <p className="text-center py-6 text-xs font-semibold text-slate-500">
+                    El carrito está vacío. Agrega productos.
+                  </p>
+                )}
               </div>
             </div>
 
+            {/* Total summary */}
             <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4">
-              <div className="flex items-center justify-between text-sm text-slate-300">
-                <span>Items</span>
-                <span>{cart.reduce((sum, item) => sum + item.quantity, 0)}</span>
+              <div className="flex items-center justify-between text-xs font-bold text-slate-450">
+                <span>Ítems</span>
+                <span>{cart.reduce((sum, item) => sum + item.quantity, 0)} uds</span>
               </div>
-              <div className="mt-2 flex items-center justify-between text-lg font-black">
-                <span>Total</span>
-                <span>{formatGs(cartTotal)}</span>
+              <div className="mt-2 flex items-center justify-between border-t border-white/5 pt-2 text-base font-black">
+                <span>Total General</span>
+                <span className="text-lg text-orange-300">{formatGs(cartTotal)}</span>
               </div>
             </div>
 
-            {submitError && <p className="mt-4 text-sm font-medium text-rose-300">{submitError}</p>}
+            {submitError && (
+              <div className="mt-4 flex items-center gap-1.5 rounded-xl bg-rose-500/10 px-3.5 py-2.5 text-xs font-bold text-rose-450">
+                <Icon name="error" className="text-sm" />
+                <p>{submitError}</p>
+              </div>
+            )}
 
+            {/* Actions */}
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               <button
-                className="rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 py-3 text-sm font-bold text-white shadow-lg shadow-orange-500/10 hover:from-orange-400 hover:to-amber-400 hover:shadow-xl hover:scale-102 active:scale-98 transition-all disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={isSubmitting}
                 onClick={handleCreateSale}
                 type="button"
               >
-                {isSubmitting ? "Registrando..." : "Cobrar e imprimir"}
+                {isSubmitting ? "Registrando..." : "Cobrar e Imprimir"}
               </button>
               <button
-                className="rounded-2xl border border-white/20 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+                className="rounded-xl border border-white/20 py-3 text-sm font-bold text-white transition-all hover:bg-white/10 hover:border-white/30 hover:scale-102 active:scale-98"
                 onClick={resetSaleComposer}
                 type="button"
               >

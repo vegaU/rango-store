@@ -182,50 +182,82 @@ export default function Dashboard() {
   const trendText = `${chartDelta >= 0 ? "+" : ""}${chartDelta.toFixed(1)}%`;
 
   return (
-    <>
-      {error && <p className="mb-4 text-sm font-medium text-amber-700 dark:text-amber-300">{error}</p>}
+    <div className="space-y-6">
+      {error && (
+        <div className="flex items-center gap-2 rounded-xl bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800 dark:bg-amber-950/20 dark:text-amber-300">
+          <Icon name="warning" className="text-base" />
+          <p>{error}</p>
+        </div>
+      )}
 
-      <section className="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-6">
+      {/* Grid of indicators with scale hover lift */}
+      <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {stats.map((item) => (
           <StatCard key={item.label} {...item} />
         ))}
         {!stats.length && loading && (
-          <p className="col-span-full text-sm text-slate-500 dark:text-slate-400">Cargando indicadores...</p>
+          <div className="col-span-full py-8 text-center text-sm font-semibold text-slate-400 dark:text-slate-500">
+            Cargando indicadores financieros...
+          </div>
         )}
       </section>
 
+      {/* Performance & Recent Sales Section */}
       <section className="flex flex-col gap-6 lg:flex-row">
-        <div className="flex flex-1 flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        {/* Performance Chart with Glow */}
+        <div className="flex flex-1 flex-col gap-5 rounded-3xl border border-slate-200/60 bg-white/80 p-6 shadow-sm backdrop-blur-md dark:border-slate-800/60 dark:bg-slate-900/60">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold">Rendimiento de ventas</h2>
-            <span className="text-sm font-bold text-primary">Ultimos 6 meses</span>
+            <div>
+              <h2 className="text-base font-extrabold text-slate-900 dark:text-white sm:text-lg">
+                Rendimiento de Ventas
+              </h2>
+              <p className="text-xs text-slate-400 dark:text-slate-500">Volumen acumulado por mes</p>
+            </div>
+            <span className="rounded-xl bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary">
+              Últimos 6 meses
+            </span>
           </div>
 
-          <div className="flex flex-col gap-2">
-            <p className="text-3xl font-extrabold tracking-tight">{formatGs(chartTotal)}</p>
+          <div className="flex flex-col gap-1.5 mt-2">
+            <p className="text-2xl font-black tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+              {formatGs(chartTotal)}
+            </p>
             <div className="flex items-center gap-2">
-              <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold ${chartDelta >= 0 ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
-                <Icon className="text-xs" name={chartDelta >= 0 ? "trending_up" : "trending_down"} /> {trendText}
+              <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold ${
+                chartDelta >= 0 ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400" : "bg-rose-100 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400"
+              }`}>
+                <Icon className="text-xs" name={chartDelta >= 0 ? "trending_up" : "trending_down"} />
+                {trendText}
               </span>
-              <p className="text-xs font-medium text-slate-500">vs 3 meses previos</p>
+              <p className="text-xs font-bold text-slate-400 dark:text-slate-500">vs 3 meses previos</p>
             </div>
           </div>
 
-          <div className="mt-4 h-[220px] w-full">
-            <svg className="h-full w-full" fill="none" preserveAspectRatio="none" viewBox="0 0 478 150" xmlns="http://www.w3.org/2000/svg">
-              {areaPath ? <path d={areaPath} fill="url(#paint0_linear_1131_5935)" /> : null}
-              {linePath ? <path d={linePath} stroke="#135bec" strokeLinecap="round" strokeWidth="3" /> : null}
+          <div className="mt-6 h-[220px] w-full">
+            <svg className="h-full w-full overflow-visible" fill="none" preserveAspectRatio="none" viewBox="0 0 478 150" xmlns="http://www.w3.org/2000/svg">
               <defs>
                 <linearGradient gradientUnits="userSpaceOnUse" id="paint0_linear_1131_5935" x1="236" x2="236" y1="1" y2="149">
-                  <stop stopColor="#135bec" stopOpacity="0.2" />
+                  <stop stopColor="#135bec" stopOpacity="0.25" />
                   <stop offset="1" stopColor="#135bec" stopOpacity="0" />
                 </linearGradient>
+                {/* Neon Glow Filter */}
+                <filter id="neon-glow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="3.5" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
               </defs>
+              {areaPath ? <path d={areaPath} fill="url(#paint0_linear_1131_5935)" /> : null}
+              {linePath ? <path d={linePath} stroke="#135bec" strokeLinecap="round" strokeWidth="3.5" filter="url(#neon-glow)" /> : null}
             </svg>
 
             <div className="mt-4 flex justify-between px-2">
               {monthLabels.map((month) => (
-                <p key={month} className={`text-[11px] font-bold ${month === monthLabels[monthLabels.length - 1] ? "text-primary" : "text-slate-500"}`}>
+                <p key={month} className={`text-[10px] font-bold uppercase tracking-wider ${
+                  month === monthLabels[monthLabels.length - 1] ? "text-primary" : "text-slate-400 dark:text-slate-600"
+                }`}>
                   {month}
                 </p>
               ))}
@@ -233,55 +265,85 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="flex w-full flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:w-96">
+        {/* Recent Sales List */}
+        <div className="flex w-full flex-col gap-5 rounded-3xl border border-slate-200/60 bg-white/80 p-6 shadow-sm backdrop-blur-md dark:border-slate-800/60 dark:bg-slate-900/60 lg:w-[400px]">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold">Ultimas ventas</h2>
-            <span className="text-sm font-bold text-primary">{recentSales.length}</span>
+            <div>
+              <h2 className="text-base font-extrabold text-slate-900 dark:text-white sm:text-lg">
+                Últimas Ventas
+              </h2>
+              <p className="text-xs text-slate-400 dark:text-slate-500">Monitoreo en tiempo real</p>
+            </div>
+            <span className="inline-flex size-6 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-xs font-bold text-indigo-600 dark:text-indigo-400 ring-1 ring-indigo-500/10">
+              {recentSales.length}
+            </span>
           </div>
 
-          <div className="flex flex-col divide-y divide-slate-200 dark:divide-slate-800">
+          <div className="flex flex-col divide-y divide-slate-100 dark:divide-slate-800/60">
             {recentSales.map((sale) => (
               <SaleItem key={sale.id} {...sale} />
             ))}
             {!recentSales.length && (
-              <p className="py-4 text-sm text-slate-500 dark:text-slate-400">{loading ? "Cargando ventas..." : "No hay ventas registradas."}</p>
+              <div className="py-8 text-center text-sm font-semibold text-slate-400 dark:text-slate-500">
+                {loading ? "Cargando ventas recientes..." : "No hay ventas registradas."}
+              </div>
             )}
           </div>
         </div>
       </section>
-    </>
+    </div>
   );
 }
 
 function StatCard({ icon, iconWrap, value, label }) {
+  // Extract custom background and text colors to style it like a high-tech badge
+  const isEmerald = iconWrap.includes("emerald");
+  const isAmber = iconWrap.includes("amber");
+  const isBlue = iconWrap.includes("blue");
+  const isViolet = iconWrap.includes("violet");
+
+  let badgeClass = "bg-primary/10 text-primary";
+  if (isEmerald) badgeClass = "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-500/10";
+  if (isAmber) badgeClass = "bg-amber-500/10 text-amber-600 dark:text-amber-400 ring-1 ring-amber-500/10";
+  if (isBlue) badgeClass = "bg-blue-500/10 text-blue-600 dark:text-blue-400 ring-1 ring-blue-500/10";
+  if (isViolet) badgeClass = "bg-violet-500/10 text-violet-600 dark:text-violet-400 ring-1 ring-violet-500/10";
+
   return (
-    <article className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:p-6">
-      <div className={`flex size-10 items-center justify-center rounded-lg ${iconWrap}`}>
-        <Icon name={icon} />
+    <article className="flex flex-col gap-4 rounded-3xl border border-slate-200/60 bg-white/80 p-5 shadow-sm backdrop-blur-md dark:border-slate-800/60 dark:bg-slate-900/60 lg:p-6 hover:-translate-y-1 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-300 cursor-default">
+      <div className={`flex size-10 items-center justify-center rounded-xl ${badgeClass}`}>
+        <Icon name={icon} className="text-xl" />
       </div>
       <div className="flex flex-col gap-1">
-        <h3 className="text-xl font-bold leading-tight">{value}</h3>
-        <p className="text-xs font-medium text-slate-500 lg:text-sm">{label}</p>
+        <h3 className="text-lg font-black tracking-tight text-slate-800 dark:text-white lg:text-xl xl:text-2xl break-words">
+          {value}
+        </h3>
+        <p className="text-xs font-semibold text-slate-400 dark:text-slate-500">
+          {label}
+        </p>
       </div>
     </article>
   );
 }
 
 function SaleItem({ icon, title, customer, amount, status, statusClass }) {
+  const isToday = status === "Hoy";
   return (
-    <article className="flex items-center justify-between py-4">
-      <div className="flex items-center gap-3">
-        <div className="flex size-10 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800">
-          <Icon className="text-slate-600 dark:text-slate-400" name={icon} />
+    <article className="flex items-center justify-between py-3.5 transition-all duration-200 hover:bg-slate-50/40 dark:hover:bg-slate-800/20 px-2 rounded-xl -mx-2">
+      <div className="flex items-center gap-3 min-w-0">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-slate-100/80 dark:bg-slate-800/50">
+          <Icon className="text-slate-500 dark:text-slate-400 text-lg" name={icon} />
         </div>
-        <div>
-          <p className="text-sm font-bold">{title}</p>
-          <p className="text-xs text-slate-500">{customer}</p>
+        <div className="min-w-0">
+          <p className="text-sm font-extrabold text-slate-850 dark:text-slate-200 truncate">{title}</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 truncate">{customer}</p>
         </div>
       </div>
-      <div className="text-right">
-        <p className="text-sm font-bold">{amount}</p>
-        <p className={`text-[10px] font-bold ${statusClass}`}>{status}</p>
+      <div className="text-right shrink-0 ml-3">
+        <p className="text-sm font-black text-slate-800 dark:text-white">{amount}</p>
+        <span className={`inline-flex items-center gap-1 text-[10px] font-bold ${statusClass}`}>
+          <span className={`size-1.5 rounded-full ${isToday ? "bg-emerald-500 animate-pulse" : "bg-slate-400"}`} />
+          {status}
+        </span>
       </div>
     </article>
   );
