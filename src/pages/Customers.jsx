@@ -4,35 +4,11 @@ import FormModal from "../components/FormModal";
 import ConfirmDialog from "../components/ConfirmDialog";
 import { del, get, post } from "../lib/api";
 import { isAdmin } from "../lib/permissions";
-import { formatGs } from "../utils/currency";
-
-function buildCustomerStats(customers, sales) {
-  const monthStart = new Date();
-  monthStart.setDate(1);
-  monthStart.setHours(0, 0, 0, 0);
-
-  const salesThisMonth = sales.filter((sale) => {
-    const createdAt = sale.createdAt ? new Date(sale.createdAt) : null;
-    return createdAt && !Number.isNaN(createdAt.getTime()) && createdAt >= monthStart;
-  });
-
-  const monthlyBilling = salesThisMonth.reduce((sum, sale) => sum + (Number(sale.total) || 0), 0);
-  const customersWithSales = new Set(sales.map((sale) => sale.customerId).filter(Boolean));
-  const followUpToday = 0;
-
-  return [
-    { icon: "groups", value: customers.length.toString(), label: "Clientes activos", tone: "bg-sky-100 text-sky-700" },
-    { icon: "workspace_premium", value: customersWithSales.size.toString(), label: "Con compras", tone: "bg-violet-100 text-violet-700" },
-    { icon: "schedule", value: followUpToday.toString(), label: "Seguimiento hoy", tone: "bg-amber-100 text-amber-700" },
-    { icon: "payments", value: formatGs(monthlyBilling), label: "Facturacion mensual", tone: "bg-emerald-100 text-emerald-700" },
-  ];
-}
 
 export default function Customers() {
   const canDeleteCustomers = isAdmin();
   const [customers, setCustomers] = useState([]);
   const [sales, setSales] = useState([]);
-  const [stats, setStats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [submitError, setSubmitError] = useState("");
@@ -45,7 +21,6 @@ export default function Customers() {
   function syncCustomers(nextCustomers, nextSales) {
     setCustomers(nextCustomers);
     setSales(nextSales);
-    setStats(buildCustomerStats(nextCustomers, nextSales));
   }
 
   useEffect(() => {
@@ -121,26 +96,6 @@ export default function Customers() {
 
   return (
     <div className="space-y-6">
-      <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-[radial-gradient(circle_at_top_right,_rgba(34,197,94,0.18),_transparent_28%),linear-gradient(135deg,_#ffffff,_#f1fff7_55%,_#f8fafc)] p-6 shadow-sm dark:border-slate-800 dark:bg-[radial-gradient(circle_at_top_right,_rgba(34,197,94,0.2),_transparent_28%),linear-gradient(135deg,_#0f172a,_#0d201a_55%,_#111827)] lg:p-8">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-2xl">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-600">CRM comercial</p>
-            <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white lg:text-4xl">
-              Clientes ordenados por valor, frecuencia y seguimiento.
-            </h1>
-            <p className="mt-3 max-w-xl text-sm leading-6 text-slate-600 dark:text-slate-300">
-              Vista conectada a la base real para revisar clientes, historial comercial y facturacion mensual.
-            </p>
-            {error && <p className="mt-3 text-sm font-medium text-amber-700 dark:text-amber-300">{error}</p>}
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:min-w-[420px]">
-            {stats.map((item) => (
-              <StatPill key={item.label} {...item} />
-            ))}
-          </div>
-        </div>
-      </section>
 
       <section className="grid gap-6">
         <div className="rounded-[24px] border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -149,9 +104,8 @@ export default function Customers() {
               <h2 className="text-lg font-bold text-slate-900 dark:text-white">Base de clientes</h2>
               <p className="text-sm text-slate-500">Seguimiento de compras, contacto y estado comercial.</p>
             </div>
-
             <button
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
               onClick={() => {
                 setSubmitError("");
                 setIsModalOpen(true);
@@ -162,6 +116,7 @@ export default function Customers() {
               Nuevo cliente
             </button>
           </div>
+          {error && <p className="px-5 py-3 text-sm font-medium text-rose-600">{error}</p>}
 
           <div className="overflow-x-auto">
             <table className="min-w-full text-left">
@@ -245,14 +200,3 @@ export default function Customers() {
   );
 }
 
-function StatPill({ icon, value, label, tone }) {
-  return (
-    <article className="rounded-2xl border border-white/60 bg-white/75 p-3 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/5">
-      <div className={`mb-3 flex size-10 items-center justify-center rounded-2xl ${tone}`}>
-        <Icon name={icon} />
-      </div>
-      <p className="text-xl font-black text-slate-900 dark:text-white">{value}</p>
-      <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-300">{label}</p>
-    </article>
-  );
-}

@@ -1,12 +1,12 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from "typeorm";
 
-@Entity("sales")
-export class Sale {
+@Entity("purchases")
+export class Purchase {
   @PrimaryGeneratedColumn()
   id!: number;
 
   @Column()
-  customerId!: number;
+  supplier!: string;
 
   @Column({ nullable: true })
   paymentMethod?: string;
@@ -14,7 +14,7 @@ export class Sale {
   @Column({ type: "decimal", precision: 10, scale: 2 })
   total!: number;
 
-  @Column({ nullable: true })
+  @Column({ type: "text", nullable: true })
   notes?: string;
 
   @CreateDateColumn()

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import ConfirmDialog from "../components/ConfirmDialog";
 import FormModal from "../components/FormModal";
 import Icon from "../components/Icon";
@@ -9,21 +9,6 @@ const roleOptions = [
   { value: "admin", label: "Administrador" },
   { value: "cajero", label: "Cajero" },
 ];
-
-function buildUserStats(users) {
-  const activeUsers = users.filter((user) => user.isActive).length;
-  const inactiveUsers = users.length - activeUsers;
-  const admins = users.filter((user) => user.role === "admin").length;
-  const cashiers = users.filter((user) => user.role === "cajero").length;
-
-  return [
-    { icon: "groups", value: users.length.toString(), label: "Usuarios", tone: "bg-sky-100 text-sky-700" },
-    { icon: "verified_user", value: activeUsers.toString(), label: "Activos", tone: "bg-emerald-100 text-emerald-700" },
-    { icon: "admin_panel_settings", value: admins.toString(), label: "Admins", tone: "bg-violet-100 text-violet-700" },
-    { icon: "point_of_sale", value: cashiers.toString(), label: "Cajeros", tone: "bg-amber-100 text-amber-700" },
-    { icon: "person_off", value: inactiveUsers.toString(), label: "Inactivos", tone: "bg-rose-100 text-rose-700" },
-  ];
-}
 
 export default function Settings() {
   const authUser = getAuthUser();
@@ -38,8 +23,6 @@ export default function Settings() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isStatusUpdating, setIsStatusUpdating] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
-
-  const stats = useMemo(() => buildUserStats(users), [users]);
 
   useEffect(() => {
     async function loadUsers() {
@@ -168,28 +151,7 @@ export default function Settings() {
 
   return (
     <div className="space-y-6">
-      <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-[radial-gradient(circle_at_top_right,_rgba(99,102,241,0.18),_transparent_28%),linear-gradient(135deg,_#ffffff,_#f5f3ff_55%,_#f8fafc)] p-6 shadow-sm dark:border-slate-800 dark:bg-[radial-gradient(circle_at_top_right,_rgba(99,102,241,0.2),_transparent_28%),linear-gradient(135deg,_#0f172a,_#18122b_55%,_#111827)] lg:p-8">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-2xl">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-violet-600">Seguridad operativa</p>
-            <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white lg:text-4xl">
-              Usuarios, roles y acceso centralizados en un solo panel.
-            </h1>
-            <p className="mt-3 max-w-xl text-sm leading-6 text-slate-600 dark:text-slate-300">
-              Administra cuentas internas, define que usuarios son administradores o cajeros y controla quienes pueden entrar al sistema.
-            </p>
-            {error && <p className="mt-3 text-sm font-medium text-amber-700 dark:text-amber-300">{error}</p>}
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:min-w-[520px]">
-            {stats.map((item) => (
-              <StatPill key={item.label} {...item} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="grid gap-6 xl:grid-cols-[1.6fr_0.9fr]">
+      <section className="grid gap-6">
         <div className="rounded-[24px] border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -209,6 +171,7 @@ export default function Settings() {
               Nuevo usuario
             </button>
           </div>
+          {error && <p className="px-5 py-3 text-sm font-medium text-rose-600">{error}</p>}
 
           <div className="overflow-x-auto">
             <table className="min-w-full text-left">
@@ -302,54 +265,6 @@ export default function Settings() {
             </table>
           </div>
         </div>
-
-        <aside className="space-y-6">
-          <div className="rounded-[24px] border border-slate-200 bg-slate-950 p-5 text-white shadow-sm dark:border-slate-800">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-[0.22em] text-violet-300">Sesion actual</p>
-                <h2 className="mt-2 text-xl font-bold">{authUser?.name ?? "Administrador"}</h2>
-              </div>
-              <div className="flex size-11 items-center justify-center rounded-2xl bg-white/10">
-                <Icon name="shield_person" />
-              </div>
-            </div>
-
-            <div className="mt-6 space-y-3 text-sm text-slate-200">
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Email</p>
-                <p className="mt-1 font-semibold">{authUser?.email ?? "Sin email"}</p>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Rol</p>
-                <p className="mt-1 font-semibold">{authUser?.role === "admin" ? "Administrador" : "Cajero"}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-bold text-slate-900 dark:text-white">Roles disponibles</h2>
-                <p className="text-sm text-slate-500">Perfil operativo actual del sistema.</p>
-              </div>
-              <Icon className="text-slate-400" name="admin_panel_settings" />
-            </div>
-
-            <div className="mt-5 space-y-4">
-              <RoleCard
-                description="Control total sobre ajustes, reportes, categorias, productos y usuarios."
-                icon="manage_accounts"
-                title="Administrador"
-              />
-              <RoleCard
-                description="Acceso a ventas, clientes, dashboard e inventario sin permisos de configuracion critica."
-                icon="point_of_sale"
-                title="Cajero"
-              />
-            </div>
-          </div>
-        </aside>
       </section>
 
       {submitError && <p className="text-sm font-medium text-rose-600 dark:text-rose-400">{submitError}</p>}
@@ -441,30 +356,3 @@ export default function Settings() {
   );
 }
 
-function StatPill({ icon, value, label, tone }) {
-  return (
-    <article className="rounded-2xl border border-white/60 bg-white/75 p-3 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/5">
-      <div className={`mb-3 flex size-10 items-center justify-center rounded-2xl ${tone}`}>
-        <Icon name={icon} />
-      </div>
-      <p className="text-xl font-black text-slate-900 dark:text-white">{value}</p>
-      <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-300">{label}</p>
-    </article>
-  );
-}
-
-function RoleCard({ title, description, icon }) {
-  return (
-    <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-800/80">
-      <div className="flex items-start gap-3">
-        <div className="flex size-10 items-center justify-center rounded-2xl bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300">
-          <Icon name={icon} />
-        </div>
-        <div>
-          <p className="font-semibold text-slate-900 dark:text-white">{title}</p>
-          <p className="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-300">{description}</p>
-        </div>
-      </div>
-    </div>
-  );
-}

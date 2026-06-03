@@ -1,5 +1,5 @@
-export class UpdateSaleDto {
-  customerId?: number;
+export class UpdatePurchaseDto {
+  supplier?: string;
   paymentMethod?: string;
   total?: number;
   notes?: string;

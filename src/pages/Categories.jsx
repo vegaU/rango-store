@@ -4,15 +4,6 @@ import FormModal from "../components/FormModal";
 import ConfirmDialog from "../components/ConfirmDialog";
 import { del, get, post, put } from "../lib/api";
 
-function buildStats(categories, products) {
-  return [
-    { icon: "category", value: categories.length.toString(), label: "Categorias activas", tone: "bg-sky-100 text-sky-700" },
-    { icon: "inventory_2", value: products.length.toString(), label: "Productos", tone: "bg-violet-100 text-violet-700" },
-    { icon: "trending_up", value: "0%", label: "Cambio semanal", tone: "bg-amber-100 text-amber-700" },
-    { icon: "shopping_bag", value: "0", label: "Ventas totales", tone: "bg-emerald-100 text-emerald-700" },
-  ];
-}
-
 const categoryFields = [
   { name: "name", label: "Nombre de la categoria", placeholder: "Ej: Repuestos motores", required: true },
   { name: "description", label: "Descripcion", placeholder: "Ej: Piezas de motores y accesorios asociados", type: "textarea" },
@@ -21,7 +12,6 @@ const categoryFields = [
 export default function Categories() {
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
-  const [stats, setStats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [submitError, setSubmitError] = useState("");
@@ -35,7 +25,6 @@ export default function Categories() {
   function syncCategoryViews(nextCategories, nextProducts) {
     setCategories(nextCategories);
     setProducts(nextProducts);
-    setStats(buildStats(nextCategories, nextProducts));
   }
 
   useEffect(() => {
@@ -148,27 +137,6 @@ export default function Categories() {
 
   return (
     <div className="space-y-6">
-      <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-[radial-gradient(circle_at_top_right,_rgba(59,130,246,0.18),_transparent_28%),linear-gradient(135deg,_#ffffff,_#f0f9ff_55%,_#f8fafc)] p-6 shadow-sm dark:border-slate-800 dark:bg-[radial-gradient(circle_at_top_right,_rgba(59,130,246,0.2),_transparent_28%),linear-gradient(135deg,_#0f172a,_#0d1f2d_55%,_#111827)] lg:p-8">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-2xl">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-blue-600">Gestion de inventario</p>
-            <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white lg:text-4xl">
-              Categorias ordenadas por productos, ventas y visibilidad.
-            </h1>
-            <p className="mt-3 max-w-xl text-sm leading-6 text-slate-600 dark:text-slate-300">
-              Organiza los productos en categorias para facilitar busquedas, analisis de ventas y control de inventario.
-            </p>
-            {error && <p className="mt-3 text-sm font-medium text-amber-700 dark:text-amber-300">{error}</p>}
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:min-w-[420px]">
-            {stats.map((item) => (
-              <StatPill key={item.label} {...item} />
-            ))}
-          </div>
-        </div>
-      </section>
-
       <section className="grid gap-6">
         <div className="rounded-[24px] border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
@@ -176,9 +144,8 @@ export default function Categories() {
               <h2 className="text-lg font-bold text-slate-900 dark:text-white">Categorias disponibles</h2>
               <p className="text-sm text-slate-500">Administra las categorias de productos en tu almacen.</p>
             </div>
-
             <button
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
               onClick={openCreateModal}
               type="button"
             >
@@ -186,6 +153,7 @@ export default function Categories() {
               Nueva categoria
             </button>
           </div>
+          {error && <p className="px-5 py-3 text-sm font-medium text-rose-600">{error}</p>}
 
           <div className="overflow-x-auto">
             <table className="min-w-full text-left">
@@ -280,14 +248,3 @@ export default function Categories() {
   );
 }
 
-function StatPill({ icon, value, label, tone }) {
-  return (
-    <article className="rounded-2xl border border-white/60 bg-white/75 p-3 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/5">
-      <div className={`mb-3 flex size-10 items-center justify-center rounded-2xl ${tone}`}>
-        <Icon name={icon} />
-      </div>
-      <p className="text-xl font-black text-slate-900 dark:text-white">{value}</p>
-      <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-300">{label}</p>
-    </article>
-  );
-}

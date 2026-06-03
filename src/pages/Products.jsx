@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import Icon from "../components/Icon";
 import FormModal from "../components/FormModal";
 import ConfirmDialog from "../components/ConfirmDialog";
@@ -51,72 +52,6 @@ function mapProduct(row, categories = []) {
   };
 }
 
-function buildInventoryStats(products) {
-  const totalProducts = products.length;
-  const criticalStock = products.filter((product) => product.stock <= 3).length;
-  const toRestock = products.filter((product) => product.stock <= 8).length;
-  const inventoryValue = products.reduce((sum, product) => sum + product.stock * product.priceValue, 0);
-
-  return [
-    { icon: "inventory_2", value: totalProducts.toString(), label: "Productos activos", tone: "bg-sky-100 text-sky-700" },
-    { icon: "warning", value: criticalStock.toString(), label: "Stock critico", tone: "bg-amber-100 text-amber-700" },
-    { icon: "local_shipping", value: toRestock.toString(), label: "Por reponer", tone: "bg-violet-100 text-violet-700" },
-    { icon: "sell", value: formatGs(inventoryValue), label: "Valor inventario", tone: "bg-emerald-100 text-emerald-700" },
-  ];
-}
-
-function buildSpotlightProducts(products) {
-  const tones = ["from-rose-500/15 via-white to-white", "from-amber-500/15 via-white to-white", "from-cyan-500/15 via-white to-white"];
-  const icons = ["disc_full", "oil_barrel", "battery_charging_full"];
-  const trends = ["+12%", "+7%", "-3%"];
-
-  return [...products]
-    .sort((left, right) => right.stock - left.stock)
-    .slice(0, 3)
-    .map((product, index) => ({
-      ...product,
-      trend: trends[index] ?? "0%",
-      tone: tones[index] ?? "from-slate-500/15 via-white to-white",
-      icon: icons[index] ?? "inventory_2",
-    }));
-}
-
-function buildPurchaseAlerts(products) {
-  return products
-    .filter((product) => product.stock <= 8)
-    .sort((left, right) => left.stock - right.stock)
-    .slice(0, 3)
-    .map((product) => ({
-      title: product.name,
-      note: `${product.stock} unidades disponibles`,
-      icon: product.stock <= 3 ? "priority_high" : "schedule",
-    }));
-}
-
-function buildCategoryShare(products) {
-  const total = products.length;
-  if (!total) {
-    return [];
-  }
-
-  const counters = products.reduce((accumulator, product) => {
-    const current = accumulator.get(product.category) ?? 0;
-    accumulator.set(product.category, current + 1);
-    return accumulator;
-  }, new Map());
-
-  const colors = ["bg-rose-500", "bg-amber-500", "bg-cyan-500", "bg-violet-500", "bg-emerald-500"];
-
-  return [...counters.entries()]
-    .sort((left, right) => right[1] - left[1])
-    .slice(0, 5)
-    .map(([label, amount], index) => ({
-      label,
-      percentage: `${Math.round((amount / total) * 100)}%`,
-      color: colors[index] ?? "bg-slate-500",
-    }));
-}
-
 function buildProductFields(categories) {
   return [
     { name: "name", label: "Nombre del producto", placeholder: "Ej: Filtro de Aire K&N", required: true },
@@ -136,10 +71,6 @@ export default function Products() {
   const canManageProducts = isAdmin();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [inventoryStats, setInventoryStats] = useState([]);
-  const [spotlightProducts, setSpotlightProducts] = useState([]);
-  const [purchaseAlerts, setPurchaseAlerts] = useState([]);
-  const [categoryShare, setCategoryShare] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [submitError, setSubmitError] = useState("");
@@ -150,14 +81,12 @@ export default function Products() {
   const [editingProduct, setEditingProduct] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const location = useLocation();
+  const filterMode = useMemo(() => new URLSearchParams(location.search).get("filter"), [location.search]);
   const productFields = buildProductFields(categories);
 
   function syncProductViews(nextProducts) {
     setProducts(nextProducts);
-    setInventoryStats(buildInventoryStats(nextProducts));
-    setSpotlightProducts(buildSpotlightProducts(nextProducts));
-    setPurchaseAlerts(buildPurchaseAlerts(nextProducts));
-    setCategoryShare(buildCategoryShare(nextProducts));
   }
 
   async function loadCategories() {
@@ -269,6 +198,13 @@ export default function Products() {
     }
   }
 
+  const visibleProducts = useMemo(() => {
+    if (filterMode === "lowStock") {
+      return products.filter((product) => Number(product.stock) <= 5);
+    }
+    return products;
+  }, [products, filterMode]);
+
   const modalInitialValues = editingProduct
     ? {
         name: editingProduct.name,
@@ -281,180 +217,96 @@ export default function Products() {
 
   return (
     <div className="space-y-6">
-      <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-[radial-gradient(circle_at_top_left,_rgba(19,91,236,0.14),_transparent_30%),linear-gradient(135deg,_#ffffff,_#eef4ff_55%,_#f8fafc)] p-6 shadow-sm dark:border-slate-800 dark:bg-[radial-gradient(circle_at_top_left,_rgba(19,91,236,0.2),_transparent_30%),linear-gradient(135deg,_#0f172a,_#0f1c37_55%,_#111827)] lg:p-8">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-2xl">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-primary">Inventario central</p>
-            <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white lg:text-4xl">
-              Productos listos para vender, reponer y rotar.
-            </h1>
-            <p className="mt-3 max-w-xl text-sm leading-6 text-slate-600 dark:text-slate-300">
-              Control de inventario en tiempo real con creacion, edicion y eliminacion de productos.
-            </p>
-            {error && <p className="mt-3 text-sm font-medium text-amber-700 dark:text-amber-300">{error}</p>}
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:min-w-[420px]">
-            {inventoryStats.map((item) => (
-              <StatPill key={item.label} {...item} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="grid gap-6 xl:grid-cols-[1.7fr_1fr]">
-        <div className="space-y-6">
-          <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <h2 className="text-lg font-bold text-slate-900 dark:text-white">Catalogo destacado</h2>
-                <p className="text-sm text-slate-500">Productos con mayor disponibilidad en stock.</p>
-              </div>
-
-              <button
-                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary/90"
-                disabled={!canManageProducts}
-                onClick={openCreateModal}
-                type="button"
-              >
-                <Icon className="text-base" name="add" />
-                Nuevo producto
-              </button>
+      <section className="grid gap-6">
+        <div className="rounded-3xl border border-slate-200/60 bg-white/80 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/60 backdrop-blur-md overflow-hidden">
+          <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-5 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-base font-extrabold text-slate-900 dark:text-white sm:text-lg">Inventario por producto</h2>
+              <p className="text-xs text-slate-400 dark:text-slate-500">Lista limpia de productos y stock disponible.</p>
             </div>
-
-            <div className="mt-5 grid gap-4 lg:grid-cols-3">
-              {loading && <p className="text-sm text-slate-500">Cargando productos...</p>}
-              {spotlightProducts.map((product) => (
-                <SpotlightCard key={product.id} {...product} />
-              ))}
-              {!loading && spotlightProducts.length === 0 && <p className="text-sm text-slate-500">Sin productos para mostrar.</p>}
-            </div>
+            <button
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary/90"
+              disabled={!canManageProducts}
+              onClick={openCreateModal}
+              type="button"
+            >
+              <Icon className="text-base" name="add" />
+              Nuevo producto
+            </button>
           </div>
-          <div className="rounded-3xl border border-slate-200/60 bg-white/80 shadow-sm dark:border-slate-800/60 dark:bg-slate-900/60 backdrop-blur-md overflow-hidden">
-            <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-5 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2 className="text-base font-extrabold text-slate-900 dark:text-white sm:text-lg">Inventario por Producto</h2>
-                <p className="text-xs text-slate-400 dark:text-slate-500">Control rápido de stock, categoría y reposición en tiempo real.</p>
-              </div>
-            </div>
+          {error && <p className="px-5 py-3 text-sm font-medium text-rose-600">{error}</p>}
 
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-left">
-                <thead>
-                  <tr className="border-b border-slate-200/60 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:border-slate-800">
-                    <th className="px-5 py-4">Producto</th>
-                    <th className="px-5 py-4">Categoría</th>
-                    <th className="px-5 py-4">Stock</th>
-                    <th className="px-5 py-4">Estado</th>
-                    <th className="px-5 py-4">Precio</th>
-                    <th className="px-5 py-4">Acciones</th>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-left">
+              <thead>
+                <tr className="border-b border-slate-200/60 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:border-slate-800">
+                  <th className="px-5 py-4">Producto</th>
+                  <th className="px-5 py-4">Categoría</th>
+                  <th className="px-5 py-4">Stock</th>
+                  <th className="px-5 py-4">Estado</th>
+                  <th className="px-5 py-4">Precio</th>
+                  <th className="px-5 py-4">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
+                {visibleProducts.map((product) => (
+                  <tr key={product.id} className="premium-row text-sm hover:bg-slate-50/40 dark:hover:bg-slate-850/15">
+                    <td className="px-5 py-4.5">
+                      <div className="flex flex-col">
+                        <span className="font-extrabold text-slate-900 dark:text-white">{product.name}</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">{product.sku}</span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4.5 font-medium text-slate-500 dark:text-slate-400">{product.category}</td>
+                    <td className="px-5 py-4.5">
+                      <span className="inline-flex min-w-10 justify-center rounded-xl bg-slate-100 px-3 py-1.5 text-xs font-black text-slate-700 dark:bg-slate-800 dark:text-slate-200 ring-1 ring-slate-200/50 dark:ring-slate-700/50">
+                        {product.stock}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4.5">
+                      <span className={`inline-flex rounded-xl px-3 py-1.5 text-xs font-black tracking-wide ${product.statusClass}`}>
+                        {product.status}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4.5 font-black text-slate-900 dark:text-white">{product.price}</td>
+                    <td className="px-5 py-4.5">
+                      <div className="flex gap-2">
+                        <button
+                          className="inline-flex items-center gap-1.5 rounded-xl bg-sky-50 px-3 py-2 text-xs font-bold text-sky-700 transition-all hover:bg-sky-100 hover:scale-102 active:scale-98 dark:bg-sky-950/20 dark:text-sky-300 dark:hover:bg-sky-900/30"
+                          disabled={!canManageProducts}
+                          onClick={() => openEditModal(product)}
+                          type="button"
+                        >
+                          <Icon className="text-base" name="edit" />
+                          Editar
+                        </button>
+                        <button
+                          className="inline-flex items-center gap-1.5 rounded-xl bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700 transition-all hover:bg-rose-100 hover:scale-102 active:scale-98 dark:bg-rose-950/20 dark:text-rose-300 dark:hover:bg-rose-900/30"
+                          disabled={!canManageProducts}
+                          onClick={() => {
+                            setSelectedProduct(product);
+                            setIsDeleteDialogOpen(true);
+                          }}
+                          type="button"
+                        >
+                          <Icon className="text-base" name="delete" />
+                          Eliminar
+                        </button>
+                      </div>
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
-                  {products.map((product) => (
-                    <tr key={product.id} className="premium-row text-sm hover:bg-slate-50/40 dark:hover:bg-slate-850/15">
-                      <td className="px-5 py-4.5">
-                        <div className="flex flex-col">
-                          <span className="font-extrabold text-slate-900 dark:text-white">{product.name}</span>
-                          <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">{product.sku}</span>
-                        </div>
-                      </td>
-                      <td className="px-5 py-4.5 font-medium text-slate-500 dark:text-slate-400">{product.category}</td>
-                      <td className="px-5 py-4.5">
-                        <span className="inline-flex min-w-10 justify-center rounded-xl bg-slate-100 px-3 py-1.5 text-xs font-black text-slate-700 dark:bg-slate-800 dark:text-slate-200 ring-1 ring-slate-200/50 dark:ring-slate-700/50">
-                          {product.stock}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4.5">
-                        <span className={`inline-flex rounded-xl px-3 py-1.5 text-xs font-black tracking-wide ${product.statusClass}`}>
-                          {product.status}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4.5 font-black text-slate-900 dark:text-white">{product.price}</td>
-                      <td className="px-5 py-4.5">
-                        <div className="flex gap-2">
-                          <button
-                            className="inline-flex items-center gap-1.5 rounded-xl bg-sky-50 px-3 py-2 text-xs font-bold text-sky-700 transition-all hover:bg-sky-100 hover:scale-102 active:scale-98 dark:bg-sky-950/20 dark:text-sky-300 dark:hover:bg-sky-900/30"
-                            disabled={!canManageProducts}
-                            onClick={() => openEditModal(product)}
-                            type="button"
-                          >
-                            <Icon className="text-base" name="edit" />
-                            Editar
-                          </button>
-                          <button
-                            className="inline-flex items-center gap-1.5 rounded-xl bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700 transition-all hover:bg-rose-100 hover:scale-102 active:scale-98 dark:bg-rose-950/20 dark:text-rose-300 dark:hover:bg-rose-900/30"
-                            disabled={!canManageProducts}
-                            onClick={() => {
-                              setSelectedProduct(product);
-                              setIsDeleteDialogOpen(true);
-                            }}
-                            type="button"
-                          >
-                            <Icon className="text-base" name="delete" />
-                            Eliminar
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                  {products.length === 0 && (
-                    <tr>
-                      <td className="px-5 py-8 text-center text-sm font-semibold text-slate-400 dark:text-slate-500" colSpan="6">
-                        {loading ? "Cargando productos..." : "No hay productos para mostrar. Crea uno nuevo para comenzar."}
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                ))}
+                {visibleProducts.length === 0 && (
+                  <tr>
+                    <td className="px-5 py-8 text-center text-sm font-semibold text-slate-400 dark:text-slate-500" colSpan="6">
+                      {loading ? "Cargando productos..." : filterMode === "lowStock" ? "No hay productos en bajo stock." : "No hay productos para mostrar. Crea uno nuevo para comenzar."}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
-
-        <aside className="space-y-6">
-          <div className="rounded-[24px] border border-slate-200 bg-slate-950 p-5 text-white shadow-sm dark:border-slate-800">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-[0.22em] text-cyan-300">Reposicion</p>
-                <h2 className="mt-2 text-xl font-bold">Compra sugerida</h2>
-              </div>
-              <div className="flex size-11 items-center justify-center rounded-2xl bg-white/10">
-                <Icon name="shopping_bag" />
-              </div>
-            </div>
-
-            <div className="mt-6 space-y-4">
-              {purchaseAlerts.map((alert) => (
-                <div key={alert.title} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="mt-0.5 flex size-9 items-center justify-center rounded-xl bg-white/10 text-cyan-200">
-                      <Icon className="text-base" name={alert.icon} />
-                    </div>
-                    <div>
-                      <p className="font-semibold">{alert.title}</p>
-                      <p className="mt-1 text-sm text-slate-300">{alert.note}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-              {purchaseAlerts.length === 0 && <p className="text-sm text-slate-300">Sin alertas de reposicion.</p>}
-            </div>
-          </div>
-
-          <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white">Mapa de categorias</h2>
-              <Icon className="text-slate-400" name="category" />
-            </div>
-
-            <div className="mt-5 space-y-4">
-              {categoryShare.map((item) => (
-                <CategoryRow key={item.label} {...item} />
-              ))}
-              {categoryShare.length === 0 && <p className="text-sm text-slate-500 dark:text-slate-400">Sin categorias para mostrar.</p>}
-            </div>
-          </div>
-        </aside>
       </section>
 
       <FormModal
@@ -487,62 +339,3 @@ export default function Products() {
   );
 }
 
-function StatPill({ icon, value, label, tone }) {
-  return (
-    <article className="rounded-2xl border border-white/60 bg-white/75 p-3 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/5">
-      <div className={`mb-3 flex size-10 items-center justify-center rounded-2xl ${tone}`}>
-        <Icon name={icon} />
-      </div>
-      <p className="break-words text-base font-black leading-tight text-slate-900 dark:text-white sm:text-xl">{value}</p>
-      <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-300">{label}</p>
-    </article>
-  );
-}
-
-function SpotlightCard({ name, sku, category, stock, trend, tone, icon }) {
-  return (
-    <article className={`rounded-[24px] border border-slate-200 bg-gradient-to-br ${tone} p-4 shadow-sm dark:border-slate-700 dark:from-slate-900 dark:via-slate-900 dark:to-slate-950`}>
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex size-12 items-center justify-center rounded-2xl bg-slate-950 text-white dark:bg-white dark:text-slate-950">
-          <Icon name={icon} />
-        </div>
-        <span className="rounded-full bg-white/80 px-2.5 py-1 text-xs font-bold text-slate-700 shadow-sm dark:bg-slate-800 dark:text-slate-200">
-          {trend}
-        </span>
-      </div>
-
-      <div className="mt-5">
-        <p className="text-lg font-bold text-slate-900 dark:text-white">{name}</p>
-        <p className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-500">{sku}</p>
-      </div>
-
-      <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
-        <InfoChip icon="category" label={category} />
-        <InfoChip icon="inventory_2" label={`${stock} uds`} />
-      </div>
-    </article>
-  );
-}
-
-function InfoChip({ icon, label }) {
-  return (
-    <div className="flex items-center gap-2 rounded-2xl bg-white/80 px-3 py-2 text-slate-700 shadow-sm dark:bg-slate-800 dark:text-slate-200">
-      <Icon className="text-base text-slate-400" name={icon} />
-      <span className="text-xs font-semibold">{label}</span>
-    </div>
-  );
-}
-
-function CategoryRow({ label, percentage, color }) {
-  return (
-    <div>
-      <div className="mb-2 flex items-center justify-between text-sm">
-        <span className="font-semibold text-slate-700 dark:text-slate-200">{label}</span>
-        <span className="text-slate-500">{percentage}</span>
-      </div>
-      <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-800">
-        <div className={`h-2 rounded-full ${color}`} style={{ width: percentage }} />
-      </div>
-    </div>
-  );
-}

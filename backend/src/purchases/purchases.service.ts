@@ -1,33 +1,33 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
-import { Sale } from "./sale.entity";
+import { Purchase } from "./purchase.entity";
 import { Product } from "../products/product.entity";
-import { CreateSaleDto } from "./dto/create-sale.dto";
-import { UpdateSaleDto } from "./dto/update-sale.dto";
+import { CreatePurchaseDto } from "./dto/create-purchase.dto";
+import { UpdatePurchaseDto } from "./dto/update-purchase.dto";
 
 @Injectable()
-export class SalesService {
+export class PurchasesService {
   constructor(
-    @InjectRepository(Sale)
-    private salesRepository: Repository<Sale>,
+    @InjectRepository(Purchase)
+    private purchasesRepository: Repository<Purchase>,
     @InjectRepository(Product)
     private productsRepository: Repository<Product>,
   ) {}
 
   findAll() {
-    return this.salesRepository.find();
+    return this.purchasesRepository.find();
   }
 
   findOne(id: number) {
-    return this.salesRepository.findOneBy({ id });
+    return this.purchasesRepository.findOneBy({ id });
   }
 
-  async create(createSaleDto: CreateSaleDto) {
-    const sale = this.salesRepository.create(createSaleDto);
-    const savedSale = await this.salesRepository.save(sale);
+  async create(createPurchaseDto: CreatePurchaseDto) {
+    const purchase = this.purchasesRepository.create(createPurchaseDto);
+    const savedPurchase = await this.purchasesRepository.save(purchase);
 
-    const payload: any = this.parseNotes(createSaleDto.notes);
+    const payload: any = this.parseNotes(createPurchaseDto.notes);
     if (Array.isArray(payload.items)) {
       await Promise.all(
         payload.items.map(async (item: any) => {
@@ -42,22 +42,22 @@ export class SalesService {
             return;
           }
 
-          product.stock = Math.max(0, Number(product.stock) - quantity);
+          product.stock = (Number(product.stock) || 0) + quantity;
           await this.productsRepository.save(product);
         }),
       );
     }
 
-    return savedSale;
+    return savedPurchase;
   }
 
-  async update(id: number, updateSaleDto: UpdateSaleDto) {
-    await this.salesRepository.update(id, updateSaleDto);
+  async update(id: number, updatePurchaseDto: UpdatePurchaseDto) {
+    await this.purchasesRepository.update(id, updatePurchaseDto);
     return this.findOne(id);
   }
 
   remove(id: number) {
-    return this.salesRepository.delete(id);
+    return this.purchasesRepository.delete(id);
   }
 
   private parseNotes(notes?: string) {

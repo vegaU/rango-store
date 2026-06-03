@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Icon from "../components/Icon";
 import { get } from "../lib/api";
 import { formatGs } from "../utils/currency";
@@ -99,6 +100,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const navigate = useNavigate();
+
   useEffect(() => {
     async function loadDashboard() {
       setLoading(true);
@@ -123,7 +126,10 @@ export default function Dashboard() {
             return createdAt && !Number.isNaN(createdAt.getTime()) && createdAt >= today;
           })
           .reduce((sum, sale) => sum + (Number(sale.total) || 0), 0);
-        const lowStock = products.filter((product) => (Number(product.stock) || 0) <= 3).length;
+        const lowStock = products.filter((product) => {
+          const stock = Number(product.stock ?? 0);
+          return !Number.isNaN(stock) && stock <= 5;
+        }).length;
         const pendingOrders = 0;
         const newCustomers = customers.filter((customer) => {
           const createdAt = customer.createdAt ? new Date(customer.createdAt) : null;
@@ -132,7 +138,13 @@ export default function Dashboard() {
 
         setStats([
           { icon: "payments", iconWrap: "bg-emerald-100 text-emerald-600", value: formatGs(salesToday), label: "Ventas hoy" },
-          { icon: "warning", iconWrap: "bg-amber-100 text-amber-600", value: `${lowStock} Articulos`, label: "Bajos en stock" },
+          {
+            icon: "warning",
+            iconWrap: "bg-amber-100 text-amber-600",
+            value: `${lowStock} Artículos`,
+            label: "Bajos en stock",
+            onClick: () => navigate("/stock?filter=lowStock"),
+          },
           { icon: "assignment_late", iconWrap: "bg-blue-100 text-blue-600", value: pendingOrders.toString(), label: "Pendientes" },
           { icon: "person_add", iconWrap: "bg-violet-100 text-violet-600", value: newCustomers.toString(), label: "Clientes nuevos" },
         ]);
@@ -295,7 +307,8 @@ export default function Dashboard() {
   );
 }
 
-function StatCard({ icon, iconWrap, value, label }) {
+function StatCard({ icon, iconWrap, value, label, onClick }) {
+  const isClickable = Boolean(onClick);
   // Extract custom background and text colors to style it like a high-tech badge
   const isEmerald = iconWrap.includes("emerald");
   const isAmber = iconWrap.includes("amber");
@@ -308,7 +321,25 @@ function StatCard({ icon, iconWrap, value, label }) {
   if (isBlue) badgeClass = "bg-blue-500/10 text-blue-600 dark:text-blue-400 ring-1 ring-blue-500/10";
   if (isViolet) badgeClass = "bg-violet-500/10 text-violet-600 dark:text-violet-400 ring-1 ring-violet-500/10";
 
-  return (
+  return isClickable ? (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex flex-col gap-4 rounded-3xl border border-slate-200/60 bg-white/80 p-5 shadow-sm backdrop-blur-md dark:border-slate-800/60 dark:bg-slate-900/60 lg:p-6 hover:-translate-y-1 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-300 cursor-pointer text-left"
+    >
+      <div className={`flex size-10 items-center justify-center rounded-xl ${badgeClass}`}>
+        <Icon name={icon} className="text-xl" />
+      </div>
+      <div className="flex flex-col gap-1">
+        <h3 className="text-lg font-black tracking-tight text-slate-800 dark:text-white lg:text-xl xl:text-2xl break-words">
+          {value}
+        </h3>
+        <p className="text-xs font-semibold text-slate-400 dark:text-slate-500">
+          {label}
+        </p>
+      </div>
+    </button>
+  ) : (
     <article className="flex flex-col gap-4 rounded-3xl border border-slate-200/60 bg-white/80 p-5 shadow-sm backdrop-blur-md dark:border-slate-800/60 dark:bg-slate-900/60 lg:p-6 hover:-translate-y-1 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-300 cursor-default">
       <div className={`flex size-10 items-center justify-center rounded-xl ${badgeClass}`}>
         <Icon name={icon} className="text-xl" />
