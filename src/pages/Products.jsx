@@ -24,12 +24,18 @@ function getCategoryName(row, categories = []) {
 
 function mapProduct(row, categories = []) {
   const stock = Number(row.stock) || 0;
-  const priceValue = Number(row.price) || 0;
+  const salePriceValue = Number(row.salePrice) || 0;
+  const purchaseCostValue = Number(row.purchaseCost) || 0;
+  const lastCostValue = Number(row.lastCost) || 0;
+  const minStock = Number(row.minStock) || 0;
 
   let status = "Estable";
   let statusClass = "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-300 ring-1 ring-emerald-500/15";
 
-  if (stock <= 3) {
+  if (minStock > 0 && stock <= minStock) {
+    status = "Crítico";
+    statusClass = "bg-rose-500/10 text-rose-600 dark:bg-rose-500/20 dark:text-rose-300 ring-1 ring-rose-500/15";
+  } else if (stock <= 3) {
     status = "Crítico";
     statusClass = "bg-rose-500/10 text-rose-600 dark:bg-rose-500/20 dark:text-rose-300 ring-1 ring-rose-500/15";
   } else if (stock <= 8) {
@@ -37,27 +43,39 @@ function mapProduct(row, categories = []) {
     statusClass = "bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-300 ring-1 ring-amber-500/15";
   }
 
+  const margin = purchaseCostValue > 0 ? Math.round(((salePriceValue - purchaseCostValue) / purchaseCostValue) * 100) : 0;
+
   return {
     id: row.id,
+    code: row.code || "",
     name: row.name || "Producto sin nombre",
     description: row.description || "",
     sku: `SKU-${row.id}`,
     category: getCategoryName(row, categories),
     categoryId: row.categoryId ?? row.category?.id ?? "",
     stock,
+    minStock,
     status,
     statusClass,
-    price: formatGs(priceValue),
-    priceValue,
+    salePrice: formatGs(salePriceValue),
+    salePriceValue,
+    purchaseCost: formatGs(purchaseCostValue),
+    purchaseCostValue,
+    lastCost: formatGs(lastCostValue),
+    lastCostValue,
+    margin,
   };
 }
 
 function buildProductFields(categories) {
   return [
+    { name: "code", label: "Codigo", placeholder: "Ej: FA-001", required: false },
     { name: "name", label: "Nombre del producto", placeholder: "Ej: Filtro de Aire K&N", required: true },
     { name: "description", label: "Descripcion", placeholder: "Detalles del producto", type: "textarea" },
-    { name: "price", label: "Precio", placeholder: "Ej: 219000", type: "number", required: true },
+    { name: "salePrice", label: "Precio de venta", placeholder: "Ej: 219000", type: "number", required: true },
+    { name: "purchaseCost", label: "Costo de compra", placeholder: "Ej: 150000", type: "number" },
     { name: "stock", label: "Stock inicial", placeholder: "Ej: 10", type: "number" },
+    { name: "minStock", label: "Stock minimo", placeholder: "Ej: 3", type: "number" },
     {
       name: "categoryId",
       label: "Categoria",
@@ -145,10 +163,13 @@ export default function Products() {
     setSubmitError("");
 
     const payload = {
+      code: formData.code || undefined,
       name: formData.name,
       description: formData.description,
-      price: Number(formData.price),
+      salePrice: Number(formData.salePrice),
+      purchaseCost: Number(formData.purchaseCost) || 0,
       stock: Number(formData.stock) || 0,
+      minStock: Number(formData.minStock) || 0,
       categoryId: formData.categoryId ? Number(formData.categoryId) : null,
     };
 
@@ -207,10 +228,13 @@ export default function Products() {
 
   const modalInitialValues = editingProduct
     ? {
+        code: editingProduct.code || "",
         name: editingProduct.name,
         description: editingProduct.description,
-        price: String(editingProduct.priceValue),
+        salePrice: String(editingProduct.salePriceValue),
+        purchaseCost: String(editingProduct.purchaseCostValue),
         stock: String(editingProduct.stock),
+        minStock: String(editingProduct.minStock),
         categoryId: editingProduct.categoryId ? String(editingProduct.categoryId) : "",
       }
     : {};
@@ -244,7 +268,9 @@ export default function Products() {
                   <th className="px-5 py-4">Categoría</th>
                   <th className="px-5 py-4">Stock</th>
                   <th className="px-5 py-4">Estado</th>
-                  <th className="px-5 py-4">Precio</th>
+                  <th className="px-5 py-4 text-right">Costo</th>
+                  <th className="px-5 py-4 text-right">Precio Vta</th>
+                  <th className="px-5 py-4 text-right">Margen</th>
                   <th className="px-5 py-4">Acciones</th>
                 </tr>
               </thead>
@@ -268,7 +294,21 @@ export default function Products() {
                         {product.status}
                       </span>
                     </td>
-                    <td className="px-5 py-4.5 font-black text-slate-900 dark:text-white">{product.price}</td>
+                    <td className="px-5 py-4.5 text-right font-medium text-slate-500 dark:text-slate-400">{product.purchaseCost}</td>
+                    <td className="px-5 py-4.5 text-right font-black text-slate-900 dark:text-white">{product.salePrice}</td>
+                    <td className="px-5 py-4.5 text-right">
+                      {product.margin > 0 ? (
+                        <span className={`inline-flex rounded-xl px-2 py-1 text-[10px] font-black tracking-wide ${
+                          product.margin >= 30
+                            ? "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-300"
+                            : "bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-300"
+                        }`}>
+                          {product.margin}%
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 text-[10px] font-bold">-</span>
+                      )}
+                    </td>
                     <td className="px-5 py-4.5">
                       <div className="flex gap-2">
                         <button

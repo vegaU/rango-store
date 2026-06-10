@@ -12,6 +12,7 @@ import { UsersModule } from "./users/users.module";
 import { JwtAuthGuard } from "./auth/jwt-auth.guard";
 import { RolesGuard } from "./auth/roles.guard";
 import { PurchasesModule } from "./purchases/purchases.module";
+import { StockMovementsModule } from "./stock-movements/stock-movements.module";
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { PurchasesModule } from "./purchases/purchases.module";
     SalesModule,
     PurchasesModule,
     CategoriesModule,
+    StockMovementsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

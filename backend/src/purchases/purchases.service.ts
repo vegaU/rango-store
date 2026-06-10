@@ -3,6 +3,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Purchase } from "./purchase.entity";
 import { Product } from "../products/product.entity";
+import { StockMovement } from "../stock-movements/stock-movement.entity";
 import { CreatePurchaseDto } from "./dto/create-purchase.dto";
 import { UpdatePurchaseDto } from "./dto/update-purchase.dto";
 
@@ -13,6 +14,8 @@ export class PurchasesService {
     private purchasesRepository: Repository<Purchase>,
     @InjectRepository(Product)
     private productsRepository: Repository<Product>,
+    @InjectRepository(StockMovement)
+    private movementsRepository: Repository<StockMovement>,
   ) {}
 
   findAll() {
@@ -29,23 +32,40 @@ export class PurchasesService {
 
     const payload: any = this.parseNotes(createPurchaseDto.notes);
     if (Array.isArray(payload.items)) {
-      await Promise.all(
-        payload.items.map(async (item: any) => {
-          const productId = Number(item.productId);
-          const quantity = Number(item.quantity) || 0;
-          if (!productId || quantity <= 0) {
-            return;
-          }
+      for (const item of payload.items) {
+        const productId = Number(item.productId);
+        const quantity = Number(item.quantity) || 0;
+        const cost = Number(item.cost) || 0;
+        if (!productId || quantity <= 0 || cost <= 0) continue;
 
-          const product = await this.productsRepository.findOneBy({ id: productId });
-          if (!product) {
-            return;
-          }
+        const product = await this.productsRepository.findOneBy({ id: productId });
+        if (!product) continue;
 
-          product.stock = (Number(product.stock) || 0) + quantity;
-          await this.productsRepository.save(product);
-        }),
-      );
+        const currentStock = Number(product.stock) || 0;
+        const currentPurchaseCost = Number(product.purchaseCost) || 0;
+
+        // Calculate weighted average cost
+        const totalValue = currentStock * currentPurchaseCost + quantity * cost;
+        const newStock = currentStock + quantity;
+        const newPurchaseCost = newStock > 0 ? totalValue / newStock : cost;
+
+        product.stock = newStock;
+        product.purchaseCost = Math.round(newPurchaseCost * 100) / 100;
+        product.lastCost = cost;
+
+        await this.productsRepository.save(product);
+
+        // Register stock movement
+        const movement = this.movementsRepository.create({
+          productId,
+          type: "ENTRADA",
+          quantity,
+          stockBefore: currentStock,
+          stockAfter: newStock,
+          reference: `Compra #${savedPurchase.id}`,
+        });
+        await this.movementsRepository.save(movement);
+      }
     }
 
     return savedPurchase;
@@ -61,10 +81,7 @@ export class PurchasesService {
   }
 
   private parseNotes(notes?: string) {
-    if (!notes) {
-      return {};
-    }
-
+    if (!notes) return {};
     try {
       return JSON.parse(notes);
     } catch {

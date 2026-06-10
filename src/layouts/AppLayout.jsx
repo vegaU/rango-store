@@ -8,7 +8,7 @@ export default function AppLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white text-[#111318] transition-colors duration-200 dark:from-[#0f172a] dark:to-[#020617] dark:text-white">
+    <div className="min-h-screen text-[#111318] transition-colors duration-200 dark:text-white">
       <Sidebar mobileOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
       <main className="flex min-h-screen w-full flex-col lg:pl-64">

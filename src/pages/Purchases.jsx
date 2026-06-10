@@ -56,12 +56,11 @@ export default function Purchases() {
 
   const purchaseTotal = useMemo(() => {
     return purchaseItems.reduce((sum, item) => {
-      const product = findProduct(products, item.productId);
-      const price = product ? Number(product.price) : 0;
+      const cost = Number(item.cost) || 0;
       const quantity = Number(item.quantity) || 0;
-      return sum + price * quantity;
+      return sum + cost * quantity;
     }, 0);
-  }, [purchaseItems, products]);
+  }, [purchaseItems]);
 
   function openCreatePurchase() {
     setSupplier("");
@@ -81,10 +80,7 @@ export default function Purchases() {
     setPurchaseItems((current) =>
       current.map((item, itemIndex) =>
         itemIndex === index
-          ? {
-              ...item,
-              [field]: field === "quantity" ? Number(value) : Number(value),
-            }
+          ? { ...item, [field]: Number(value) }
           : item,
       ),
     );
@@ -96,7 +92,7 @@ export default function Purchases() {
       return;
     }
 
-    setPurchaseItems((current) => [...current, { productId: 0, quantity: 1 }]);
+    setPurchaseItems((current) => [...current, { productId: 0, quantity: 1, cost: 0 }]);
     setSelectedItemIndex(purchaseItems.length);
     setProductSearch("");
     setIsProductPickerOpen(true);
@@ -110,7 +106,18 @@ export default function Purchases() {
 
   function selectProduct(productId) {
     if (selectedItemIndex !== null) {
-      updatePurchaseItem(selectedItemIndex, "productId", productId);
+      const product = findProduct(products, productId);
+      setPurchaseItems((current) =>
+        current.map((item, idx) =>
+          idx === selectedItemIndex
+            ? {
+                ...item,
+                productId: Number(productId),
+                cost: item.cost || Number(product?.purchaseCost) || 0,
+              }
+            : item,
+        ),
+      );
     }
     setIsProductPickerOpen(false);
     setProductSearch("");
@@ -127,7 +134,11 @@ export default function Purchases() {
     }
 
     const search = productSearch.toLowerCase();
-    return products.filter((product) => product.name.toLowerCase().includes(search));
+    return products.filter(
+      (product) =>
+        product.name.toLowerCase().includes(search) ||
+        (product.code && product.code.toLowerCase().includes(search)),
+    );
   }, [products, productSearch]);
 
   function removePurchaseItem(index) {
@@ -163,7 +174,14 @@ export default function Purchases() {
         supplier: supplier.trim(),
         paymentMethod,
         total: purchaseTotal,
-        notes: JSON.stringify({ items: purchaseItems, extraNotes: notes }),
+        notes: JSON.stringify({
+          items: purchaseItems.map((item) => ({
+            productId: item.productId,
+            quantity: Number(item.quantity) || 0,
+            cost: Number(item.cost) || 0,
+          })),
+          extraNotes: notes,
+        }),
       };
 
       const newPurchase = await post("/purchases", payload);
@@ -234,7 +252,7 @@ export default function Purchases() {
 
       {isCreateOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
-          <div className="flex w-full max-w-3xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950 max-h-[90vh]">
+          <div className="flex w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950 max-h-[90vh]">
             <div className="flex items-center justify-between gap-4 border-b border-slate-200 px-6 py-4 dark:border-slate-800">
               <div>
                 <h3 className="text-xl font-bold text-slate-900 dark:text-white">Registrar compra</h3>
@@ -301,42 +319,65 @@ export default function Purchases() {
                   <p className="text-sm text-slate-500 dark:text-slate-400">Agrega productos para incluirlos en la compra.</p>
                 ) : (
                   <div className="space-y-3">
-                    {purchaseItems.map((item, index) => (
-                      <div key={index} className="grid gap-3 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950 sm:grid-cols-[1.5fr,0.9fr,auto]">
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                          Producto
-                          <button
-                            type="button"
-                            onClick={() => openProductPicker(index)}
-                            className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-left text-sm text-slate-900 transition hover:bg-slate-50 focus:border-primary focus:ring-1 focus:ring-primary dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:hover:bg-slate-800"
-                          >
-                            {findProduct(products, item.productId)?.name || "Selecciona un producto"}
-                          </button>
-                        </label>
+                    {purchaseItems.map((item, index) => {
+                      const product = findProduct(products, item.productId);
+                      const cost = Number(item.cost) || 0;
+                      const quantity = Number(item.quantity) || 0;
+                      const subtotal = cost * quantity;
+                      return (
+                        <div key={index} className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+                          <div className="grid gap-3 sm:grid-cols-[1.5fr,0.7fr,0.7fr,auto] items-end">
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                              Producto
+                              <button
+                                type="button"
+                                onClick={() => openProductPicker(index)}
+                                className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-left text-sm text-slate-900 transition hover:bg-slate-50 focus:border-primary focus:ring-1 focus:ring-primary dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:hover:bg-slate-800"
+                              >
+                                {product?.name || "Selecciona un producto"}
+                              </button>
+                            </label>
 
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                          Cantidad
-                          <input
-                            type="number"
-                            min="1"
-                            value={item.quantity}
-                            onChange={(e) => updatePurchaseItem(index, "quantity", e.target.value)}
-                            className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-                          />
-                        </label>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                              Costo unitario
+                              <input
+                                type="number"
+                                min="0"
+                                value={item.cost || ""}
+                                onChange={(e) => updatePurchaseItem(index, "cost", e.target.value)}
+                                placeholder="0"
+                                className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                              />
+                            </label>
 
-                        <div className="flex items-end justify-end">
-                          <button
-                            type="button"
-                            onClick={() => removePurchaseItem(index)}
-                            className="inline-flex items-center gap-2 rounded-2xl bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700 transition hover:bg-rose-100 dark:bg-rose-950/20 dark:text-rose-300 dark:hover:bg-rose-900/30"
-                          >
-                            <Icon name="delete" className="text-base" />
-                            Eliminar
-                          </button>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                              Cantidad
+                              <input
+                                type="number"
+                                min="1"
+                                value={item.quantity}
+                                onChange={(e) => updatePurchaseItem(index, "quantity", e.target.value)}
+                                className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                              />
+                            </label>
+
+                            <div className="flex flex-col items-end gap-2">
+                              <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                                Subtotal: {formatGs(subtotal)}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => removePurchaseItem(index)}
+                                className="inline-flex items-center gap-2 rounded-2xl bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700 transition hover:bg-rose-100 dark:bg-rose-950/20 dark:text-rose-300 dark:hover:bg-rose-900/30"
+                              >
+                                <Icon name="delete" className="text-base" />
+                                Eliminar
+                              </button>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -418,9 +459,14 @@ export default function Purchases() {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="font-semibold text-slate-900 dark:text-white">{product.name}</p>
-                          <p className="text-xs text-slate-500 dark:text-slate-400">Stock: {product.stock}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                            {product.code ? `${product.code} · ` : ""}Stock: {product.stock}
+                          </p>
                         </div>
-                        <p className="font-bold text-primary">{formatGs(Number(product.price))}</p>
+                        <div className="text-right">
+                          <p className="font-bold text-primary">{formatGs(Number(product.purchaseCost) || 0)}</p>
+                          <p className="text-[10px] text-slate-400">Costo actual</p>
+                        </div>
                       </div>
                     </button>
                   ))}

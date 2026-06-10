@@ -6,17 +6,29 @@ export class Product {
   @PrimaryGeneratedColumn()
   id!: number;
 
+  @Column({ nullable: true })
+  code?: string;
+
   @Column()
   name!: string;
 
   @Column({ type: "text", nullable: true })
   description?: string;
 
-  @Column({ type: "decimal", precision: 10, scale: 2 })
-  price!: number;
+  @Column({ type: "decimal", precision: 10, scale: 2, name: "sale_price", nullable: true })
+  salePrice: number = 0;
+
+  @Column({ type: "decimal", precision: 10, scale: 2, default: 0, name: "purchase_cost" })
+  purchaseCost: number = 0;
+
+  @Column({ type: "decimal", precision: 10, scale: 2, default: 0, name: "last_cost" })
+  lastCost: number = 0;
 
   @Column({ type: "int", default: 0 })
   stock: number = 0;
+
+  @Column({ type: "int", default: 0, name: "min_stock" })
+  minStock: number = 0;
 
   @Column({ nullable: true })
   categoryId?: number;
