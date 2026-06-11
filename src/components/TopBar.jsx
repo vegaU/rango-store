@@ -12,6 +12,19 @@ export default function TopBar({ onOpenSidebar }) {
   const navigate = useNavigate();
   const authUser = getAuthUser();
   const notifRef = useRef(null);
+  const [isDark, setIsDark] = useState(() => {
+    const stored = localStorage.getItem('theme');
+    return stored === 'dark';
+  });
+
+  // Apply theme class to document root
+  useEffect(() => {
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDark]);
   const formattedDate = new Intl.DateTimeFormat("es-PY", {
     weekday: "long",
     day: "numeric",
@@ -24,6 +37,14 @@ export default function TopBar({ onOpenSidebar }) {
       navigate(`/ventas?search=${encodeURIComponent(searchQuery.trim())}`);
       setSearchQuery("");
     }
+  }
+
+  function toggleTheme() {
+    setIsDark(prev => {
+      const next = !prev;
+      localStorage.setItem('theme', next ? 'dark' : 'light');
+      return next;
+    });
   }
 
   async function loadLowStock() {
@@ -113,6 +134,13 @@ export default function TopBar({ onOpenSidebar }) {
                 {lowStockProducts.length}
               </span>
             )}
+          </button>
+          {/* Theme Toggle */}
+          <button
+            onClick={toggleTheme}
+            className="flex size-10 items-center justify-center rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100/80 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800/50 transition-all duration-200 cursor-pointer"
+          >
+            <Icon name={isDark ? "dark_mode" : "light_mode"} className="text-xl" />
           </button>
 
           {/* Notifications dropdown */}

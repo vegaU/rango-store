@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Icon from "../components/Icon";
 import { get, post } from "../lib/api";
-import { formatGs } from "../utils/currency";
+import { formatGs, formatGsInput, parseGs } from "../utils/currency";
 
 const paymentMethods = [
   { value: "Efectivo", label: "Efectivo" },
@@ -341,10 +341,9 @@ export default function Purchases() {
                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
                               Costo unitario
                               <input
-                                type="number"
-                                min="0"
-                                value={item.cost || ""}
-                                onChange={(e) => updatePurchaseItem(index, "cost", e.target.value)}
+                                type="text"
+                                value={item.cost ? formatGsInput(item.cost) : ""}
+                                onChange={(e) => updatePurchaseItem(index, "cost", parseGs(e.target.value))}
                                 placeholder="0"
                                 className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                               />

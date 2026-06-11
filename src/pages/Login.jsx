@@ -60,9 +60,7 @@ export default function Login() {
           <h1 className="mt-4 text-2xl font-black tracking-tight text-slate-900 dark:text-white sm:text-3xl">
             Iniciar Sesión
           </h1>
-          <p className="mt-1 text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-            Bienvenido a Rango Store
-          </p>
+          <p className="mt-2 text-lg font-semibold tracking-wide text-slate-800 dark:text-slate-200">Bienvenido a Rango Store</p>
         </div>
 
         {/* Error Message */}

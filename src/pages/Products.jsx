@@ -5,7 +5,7 @@ import FormModal from "../components/FormModal";
 import ConfirmDialog from "../components/ConfirmDialog";
 import { del, get, post, put } from "../lib/api";
 import { isAdmin } from "../lib/permissions";
-import { formatGs } from "../utils/currency";
+import { formatGs, parseGs } from "../utils/currency";
 
 function getCategoryName(row, categories = []) {
   if (row.category?.name) {
@@ -72,8 +72,8 @@ function buildProductFields(categories) {
     { name: "code", label: "Codigo", placeholder: "Ej: FA-001", required: false },
     { name: "name", label: "Nombre del producto", placeholder: "Ej: Filtro de Aire K&N", required: true },
     { name: "description", label: "Descripcion", placeholder: "Detalles del producto", type: "textarea" },
-    { name: "salePrice", label: "Precio de venta", placeholder: "Ej: 219000", type: "number", required: true },
-    { name: "purchaseCost", label: "Costo de compra", placeholder: "Ej: 150000", type: "number" },
+    { name: "salePrice", label: "Precio de venta", placeholder: "Ej: 219.000", type: "currency", required: true },
+    { name: "purchaseCost", label: "Costo de compra", placeholder: "Ej: 150.000", type: "currency" },
     { name: "stock", label: "Stock inicial", placeholder: "Ej: 10", type: "number" },
     { name: "minStock", label: "Stock minimo", placeholder: "Ej: 3", type: "number" },
     {
@@ -166,8 +166,8 @@ export default function Products() {
       code: formData.code || undefined,
       name: formData.name,
       description: formData.description,
-      salePrice: Number(formData.salePrice),
-      purchaseCost: Number(formData.purchaseCost) || 0,
+      salePrice: parseGs(formData.salePrice),
+      purchaseCost: parseGs(formData.purchaseCost) || 0,
       stock: Number(formData.stock) || 0,
       minStock: Number(formData.minStock) || 0,
       categoryId: formData.categoryId ? Number(formData.categoryId) : null,

@@ -6,12 +6,12 @@
 
 @theme {
   --color-primary: #135bec;
-  --color-background-light: #f6f6f8;
-  --color-background-dark: #0b0f19;
+  --color-background-light: #f0f4f8;
+  --color-background-dark: #1f2937;
 }
 
 body {
-  background-color: #d9dde5;
+  background-color: var(--color-background-light);
   color: #0f172a;
   min-height: 100dvh;
   font-family: "Manrope", sans-serif;
@@ -19,6 +19,12 @@ body {
   -moz-osx-font-smoothing: grayscale;
   transition: background-color 0.3s ease, color 0.3s ease;
 }
+
+.dark body {
+  background-color: var(--color-background-dark);
+  color: #e5e7eb;
+}
+
 
 /* Custom Scrollbars */
 ::-webkit-scrollbar {
