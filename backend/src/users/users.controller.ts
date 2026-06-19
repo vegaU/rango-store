@@ -25,9 +25,24 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  async findAll() {
-    const users = await this.usersService.findAll();
-    return users.map(serializeUser);
+  async findAll(@Req() request: Request & { user?: { role?: string; tenantId?: number } }) {
+    const userRole = request.user?.role;
+    const userTenantId = request.user?.tenantId;
+
+    // Super Admin sees all users across all tenants
+    if (userRole === "super_admin") {
+      const users = await this.usersService.findAllForSuperAdmin();
+      return users.map(serializeUser);
+    }
+
+    // Normal admin/cajero: filter by their own tenantId from the JWT token
+    if (userTenantId && userTenantId > 0) {
+      const users = await this.usersService.findByTenantId(userTenantId);
+      return users.map(serializeUser);
+    }
+
+    // Fallback: if no tenantId in token, return empty array
+    return [];
   }
 
   @Post()

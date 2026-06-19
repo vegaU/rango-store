@@ -6,19 +6,23 @@ import { hash } from "bcryptjs";
 import { User, UserRole } from "./user.entity";
 import { CreateUserDto } from "./dto/create-user.dto";
 import { UpdateUserDto } from "./dto/update-user.dto";
+import { TenantContextService } from "../tenants/tenant-context.service";
 
 @Injectable()
 export class UsersService implements OnModuleInit {
   constructor(
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
-    private readonly dataSource: DataSource,
     private readonly configService: ConfigService,
+    private readonly tenantContextService: TenantContextService,
+    private readonly dataSource: DataSource,
   ) {}
 
   async onModuleInit() {
-    await this.ensureUsersTable();
-    await this.ensureAdminUser();
+    // Run admin seed within default tenant context (tenantId = 1)
+    this.tenantContextService.run({ tenantId: 1 }, async () => {
+      await this.ensureAdminUser();
+    });
   }
 
   async findByEmail(email: string) {
@@ -30,11 +34,41 @@ export class UsersService implements OnModuleInit {
   }
 
   async findAll() {
+    // By default, filter by current tenant context
+    const tenantId = this.tenantContextService.getTenantId();
+    if (tenantId === 0) {
+      // Super Admin (tenantId = 0) can see all users
+      return this.usersRepository.find({
+        order: {
+          createdAt: "DESC",
+        },
+      });
+    }
+    // Normal admin/cajero can only see users from their own tenant
+    return this.usersRepository.find({
+      where: { tenantId },
+      order: {
+        createdAt: "DESC",
+      },
+    });
+  }
+
+  async findAllForSuperAdmin() {
+    // Super Admin can see all users across all tenants
     return this.usersRepository.find({
       order: {
         createdAt: "DESC",
       },
     });
+  }
+
+  async findByTenantId(tenantId: number) {
+    // Use query builder to bypass typeorm-patch tenant filter override
+    return this.usersRepository
+      .createQueryBuilder("user")
+      .where("user.tenantId = :tenantId", { tenantId })
+      .orderBy("user.createdAt", "DESC")
+      .getMany();
   }
 
   async createUser(params: CreateUserDto | { name: string; email: string; password: string; role?: UserRole }) {
@@ -98,36 +132,57 @@ export class UsersService implements OnModuleInit {
     return this.usersRepository.save(user);
   }
 
-  private async ensureUsersTable() {
-    await this.dataSource.query(`
-      CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        name VARCHAR(120) NOT NULL,
-        email VARCHAR(255) NOT NULL UNIQUE,
-        password_hash VARCHAR(255) NOT NULL,
-        role VARCHAR(50) NOT NULL DEFAULT 'admin',
-        is_active BOOLEAN NOT NULL DEFAULT true,
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-      )
-    `);
-  }
-
   private async ensureAdminUser() {
+    // Create/ensure default tenant admin user
     const adminEmail = this.configService.get<string>("AUTH_ADMIN_EMAIL", "admin@rango.store").toLowerCase();
     const adminPassword = this.configService.get<string>("AUTH_ADMIN_PASSWORD", "Admin123*");
     const adminName = this.configService.get<string>("AUTH_ADMIN_NAME", "Administrador");
 
     const existingUser = await this.findByEmail(adminEmail);
-    if (existingUser) {
-      return;
+    if (!existingUser) {
+      const hashedPassword = await hash(adminPassword, 10);
+      const user = this.usersRepository.create({
+        name: adminName,
+        email: adminEmail,
+        passwordHash: hashedPassword,
+        role: "admin",
+        isActive: true,
+        tenantId: 1,
+      });
+      await this.usersRepository.save(user);
+      console.log("✓ Created default admin user:", adminEmail);
     }
 
-    await this.createUser({
-      name: adminName,
-      email: adminEmail,
-      password: adminPassword,
-      role: "admin",
-    });
+    // Create/ensure Super Admin (global, not tied to a specific tenant)
+    // Use raw SQL to completely bypass TypeORM filters and patches
+    const superAdminEmail = this.configService.get<string>("SUPER_ADMIN_EMAIL", "super@rango.store").toLowerCase();
+    const superAdminPassword = this.configService.get<string>("SUPER_ADMIN_PASSWORD", "SuperAdmin123*");
+    const superAdminName = this.configService.get<string>("SUPER_ADMIN_NAME", "Super Administrador");
+
+    // Use the underlying DataSource to execute raw queries
+    const queryRunner = this.dataSource.createQueryRunner();
+    try {
+      await queryRunner.connect();
+
+      // Check if super admin exists (by email only, ignoring tenantId)
+      const result = await queryRunner.query(
+        `SELECT id FROM users WHERE email = $1`,
+        [superAdminEmail],
+      );
+
+      if (result.length === 0) {
+        const superAdminHash = await hash(superAdminPassword, 10);
+        await queryRunner.query(
+          `INSERT INTO users (name, email, password_hash, role, is_active, tenant_id, created_at, updated_at)
+           VALUES ($1, $2, $3, $4, $5, 0, NOW(), NOW())`,
+          [superAdminName, superAdminEmail, superAdminHash, "super_admin", true],
+        );
+        console.log("✓ Created super admin user:", superAdminEmail);
+      }
+    } catch (error) {
+      console.error("Error creating super admin:", error);
+    } finally {
+      await queryRunner.release();
+    }
   }
 }

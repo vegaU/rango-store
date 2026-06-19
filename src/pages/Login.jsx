@@ -1,16 +1,22 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import Icon from "../components/Icon";
 import { post } from "../lib/api";
-import { getToken, saveSession } from "../lib/auth";
+import { getToken, getTenantSlug, saveSession, setTenantSlug } from "../lib/auth";
+import { getTenantSlugFromDomain } from "../lib/api";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
+  const [tenantSlug, setTenantSlugLocal] = useState(getTenantSlug() || "");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
+
+  // Check if tenant slug is already determined from domain
+  const domainSlug = getTenantSlugFromDomain();
+  const showTenantField = !domainSlug;
 
   useEffect(() => {
     if (getToken()) {
@@ -23,6 +29,16 @@ export default function Login() {
     if (!email || !password) {
       setError("Por favor completa ambos campos");
       return;
+    }
+
+    if (showTenantField && !tenantSlug) {
+      setError("Por favor ingresa el código de la tienda");
+      return;
+    }
+
+    // Save tenant slug before making the request so it's available in api.js
+    if (tenantSlug) {
+      setTenantSlug(tenantSlug);
     }
 
     setIsSubmitting(true);
@@ -44,14 +60,14 @@ export default function Login() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-950 px-4 py-12">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[var(--color-background-light)] dark:bg-[var(--color-background-dark)] px-4 py-12">
       {/* Dynamic Animated Glowing Circles */}
       <div className="pointer-events-none absolute -top-24 -left-20 h-[35rem] w-[35rem] rounded-full bg-primary/15 blur-[120px] animate-float-slow" />
       <div className="pointer-events-none absolute -bottom-36 -right-20 h-[35rem] w-[35rem] rounded-full bg-indigo-600/15 blur-[120px] animate-float-reverse-slow" />
       <div className="pointer-events-none absolute top-1/3 left-1/4 h-80 w-80 rounded-full bg-cyan-500/10 blur-[100px] animate-pulse-slow" />
 
       {/* Login Card */}
-      <div className="relative w-full max-w-md rounded-[32px] border border-white/10 bg-white/70 p-8 shadow-2xl backdrop-blur-2xl dark:bg-slate-900/60 sm:p-10">
+      <div className="relative w-full max-w-md rounded-[32px] border border-[var(--color-input-border-light)] dark:border-[var(--color-input-border-dark)] bg-[var(--color-input-bg-light)] dark:bg-[var(--color-input-bg-dark)] p-8 shadow-xl backdrop-blur-xl ring-1 ring-white/15 dark:ring-slate-700/30 sm:p-10 transform transition-transform duration-500 hover:scale-[1.02]">
         {/* Header */}
         <div className="mb-8 text-center">
           <div className="inline-flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-indigo-600 text-white shadow-xl shadow-primary/20 ring-4 ring-primary/10">
@@ -73,8 +89,28 @@ export default function Login() {
 
         {/* Form */}
         <form className="space-y-5" onSubmit={handleSubmit}>
+          {showTenantField && (
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[var(--color-input-text-light)] dark:text-[var(--color-input-text-dark)]">
+                Código de Tienda
+              </label>
+              <div className="relative mt-1.5">
+                <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                  <Icon name="store" className="text-lg" />
+                </span>
+                <input
+                  className="w-full rounded-xl border border-[var(--color-input-border-light)] dark:border-[var(--color-input-border-dark)] bg-[var(--color-input-bg-light)] dark:bg-[var(--color-input-bg-dark)] py-2.5 pl-10 pr-4 text-sm text-[var(--color-input-text-light)] dark:text-[var(--color-input-text-dark)] placeholder:text-[var(--color-placeholder-light)] dark:placeholder:text-[var(--color-placeholder-dark)] shadow-inner transition-all duration-300 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none"
+                  onChange={(e) => setTenantSlugLocal(e.target.value)}
+                  placeholder="default"
+                  type="text"
+                  value={tenantSlug}
+                />
+              </div>
+            </div>
+          )}
+
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <label className="block text-xs font-bold uppercase tracking-wider text-[var(--color-input-text-light)] dark:text-[var(--color-input-text-dark)]">
               Email
             </label>
             <div className="relative mt-1.5">
@@ -82,7 +118,7 @@ export default function Login() {
                 <Icon name="mail" className="text-lg" />
               </span>
               <input
-                className="w-full rounded-xl border border-slate-200 bg-white/80 py-2.5 pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition-all duration-200 focus:border-primary focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary/10 dark:border-slate-800 dark:bg-slate-950/50 dark:text-white dark:placeholder:text-slate-600 dark:focus:border-primary dark:focus:bg-slate-950"
+                className="w-full rounded-xl border border-[var(--color-input-border-light)] dark:border-[var(--color-input-border-dark)] bg-[var(--color-input-bg-light)] dark:bg-[var(--color-input-bg-dark)] py-2.5 pl-10 pr-4 text-sm text-[var(--color-input-text-light)] dark:text-[var(--color-input-text-dark)] placeholder:text-[var(--color-placeholder-light)] dark:placeholder:text-[var(--color-placeholder-dark)] shadow-inner transition-all duration-300 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none"
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="ejemplo@rango.com"
                 type="email"
@@ -93,7 +129,7 @@ export default function Login() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <label className="block text-xs font-bold uppercase tracking-wider text-[var(--color-input-text-light)] dark:text-[var(--color-input-text-dark)]">
               Contraseña
             </label>
             <div className="relative mt-1.5">
@@ -101,7 +137,7 @@ export default function Login() {
                 <Icon name="lock" className="text-lg" />
               </span>
               <input
-                className="w-full rounded-xl border border-slate-200 bg-white/80 py-2.5 pl-10 pr-10 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition-all duration-200 focus:border-primary focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary/10 dark:border-slate-800 dark:bg-slate-950/50 dark:text-white dark:placeholder:text-slate-600 dark:focus:border-primary dark:focus:bg-slate-950"
+                className="w-full rounded-xl border border-[var(--color-input-border-light)] dark:border-[var(--color-input-border-dark)] bg-[var(--color-input-bg-light)] dark:bg-[var(--color-input-bg-dark)] py-2.5 pl-10 pr-10 text-sm text-[var(--color-input-text-light)] dark:text-[var(--color-input-text-dark)] placeholder:text-[var(--color-placeholder-light)] dark:placeholder:text-[var(--color-placeholder-dark)] shadow-inner transition-all duration-300 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none"
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 type={showPass ? "text" : "password"}
@@ -119,7 +155,7 @@ export default function Login() {
           </div>
 
           <button
-            className="mt-2 w-full rounded-xl bg-gradient-to-r from-primary to-indigo-600 py-3 font-bold text-white shadow-lg shadow-primary/20 transition-all duration-200 hover:from-primary/95 hover:to-indigo-500 hover:shadow-xl active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-2 w-full rounded-xl bg-primary py-3 font-bold text-white shadow-lg shadow-primary/20 transition-all duration-200 hover:bg-primary/90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
             disabled={isSubmitting}
             type="submit"
           >
@@ -133,6 +169,14 @@ export default function Login() {
             )}
           </button>
         </form>
+
+        {/* Link to Register */}
+        <p className="mt-6 text-center text-sm text-slate-600 dark:text-slate-400">
+          ¿No tienes una tienda?{" "}
+          <Link to="/register" className="font-bold text-primary hover:text-primary/80 transition-colors">
+            Crear Tienda
+          </Link>
+        </p>
       </div>
     </div>
   );

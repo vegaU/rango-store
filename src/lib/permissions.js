@@ -1,5 +1,9 @@
 import { getAuthUser } from "./auth";
 
+export function isSuperAdmin() {
+  return getAuthUser()?.role === "super_admin";
+}
+
 export function isAdmin() {
   return getAuthUser()?.role === "admin";
 }
@@ -20,7 +24,7 @@ export function canAccessRoute(pathname) {
   }
 
   const accessByRoute = {
-    "/dashboard": ["admin", "cajero"],
+    "/dashboard": ["super_admin", "admin", "cajero"],
     "/stock": ["admin", "cajero"],
     "/ventas": ["admin", "cajero"],
     "/clientes": ["admin", "cajero"],
@@ -28,6 +32,8 @@ export function canAccessRoute(pathname) {
     "/compras": ["admin"],
     "/reportes": ["admin"],
     "/ajustes": ["admin"],
+    "/proveedores": ["admin"],
+    "/empresas": ["super_admin"],
     "/menu": ["admin", "cajero"],
   };
 

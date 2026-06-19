@@ -1,8 +1,9 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from "typeorm";
 import { Category } from "../categories/category.entity";
+import { TenantBaseEntity } from "../tenants/tenant-base.entity";
 
 @Entity("products")
-export class Product {
+export class Product extends TenantBaseEntity {
   @PrimaryGeneratedColumn()
   id!: number;
 

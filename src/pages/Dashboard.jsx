@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Icon from "../components/Icon";
 import { get } from "../lib/api";
 import { formatGs } from "../utils/currency";
+import { isSuperAdmin } from "../lib/permissions";
 
 const monthLabels = ["Ene", "Feb", "Mar", "Abr", "May", "Jun"];
 
@@ -107,6 +108,29 @@ export default function Dashboard() {
       setLoading(true);
       setError("");
 
+      // SUPER ADMIN: Show global platform stats instead of store stats
+      if (isSuperAdmin()) {
+        try {
+          const stats = await get("/tenants/stats/global");
+          setStats([
+            { icon: "domain", iconWrap: "bg-emerald-100 text-emerald-600", value: String(stats.totalTenants ?? 0), label: "Total Empresas" },
+            { icon: "check_circle", iconWrap: "bg-blue-100 text-blue-600", value: String(stats.activeTenants ?? 0), label: "Empresas Activas" },
+            { icon: "block", iconWrap: "bg-rose-100 text-rose-600", value: String(stats.inactiveTenants ?? 0), label: "Empresas Suspendidas" },
+            { icon: "person", iconWrap: "bg-violet-100 text-violet-600", value: "-", label: "Panel de Control" },
+          ]);
+          setChartTotal(0);
+          setChartDelta(0);
+          setChartValues([0, 0, 0, 0, 0, 0]);
+          setRecentSales([]);
+        } catch {
+          setError("No se pudo cargar el dashboard. Verifica la conexion con el backend.");
+        } finally {
+          setLoading(false);
+        }
+        return;
+      }
+
+      // NORMAL ADMIN / CAJERO: Load store-specific dashboard data
       try {
         const [salesData, productsData, customersData] = await Promise.all([
           get("/sales"),
@@ -187,7 +211,7 @@ export default function Dashboard() {
     }
 
     loadDashboard();
-  }, []);
+  }, [navigate]);
 
   const linePath = buildChartPath(chartValues);
   const areaPath = buildAreaPath(linePath);
@@ -214,95 +238,96 @@ export default function Dashboard() {
         )}
       </section>
 
-      {/* Performance & Recent Sales Section */}
-      <section className="flex flex-col gap-6 lg:flex-row">
-        {/* Performance Chart with Glow */}
-        <div className="flex flex-1 flex-col gap-5 rounded-3xl border border-slate-200/60 bg-white/80 p-6 shadow-sm backdrop-blur-md dark:border-slate-800/60 dark:bg-slate-900/60">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-base font-extrabold text-slate-900 dark:text-white sm:text-lg">
-                Rendimiento de Ventas
-              </h2>
-              <p className="text-xs text-slate-400 dark:text-slate-500">Volumen acumulado por mes</p>
-            </div>
-            <span className="rounded-xl bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary">
-              Últimos 6 meses
-            </span>
-          </div>
-
-          <div className="flex flex-col gap-1.5 mt-2">
-            <p className="text-2xl font-black tracking-tight text-slate-900 dark:text-white sm:text-3xl">
-              {formatGs(chartTotal)}
-            </p>
-            <div className="flex items-center gap-2">
-              <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold ${
-                chartDelta >= 0 ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400" : "bg-rose-100 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400"
-              }`}>
-                <Icon className="text-xs" name={chartDelta >= 0 ? "trending_up" : "trending_down"} />
-                {trendText}
-              </span>
-              <p className="text-xs font-bold text-slate-400 dark:text-slate-500">vs 3 meses previos</p>
-            </div>
-          </div>
-
-          <div className="mt-6 h-[220px] w-full">
-            <svg className="h-full w-full overflow-visible" fill="none" preserveAspectRatio="none" viewBox="0 0 478 150" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <linearGradient gradientUnits="userSpaceOnUse" id="paint0_linear_1131_5935" x1="236" x2="236" y1="1" y2="149">
-                  <stop stopColor="#135bec" stopOpacity="0.25" />
-                  <stop offset="1" stopColor="#135bec" stopOpacity="0" />
-                </linearGradient>
-                {/* Neon Glow Filter */}
-                <filter id="neon-glow" x="-20%" y="-20%" width="140%" height="140%">
-                  <feGaussianBlur stdDeviation="3.5" result="blur" />
-                  <feMerge>
-                    <feMergeNode in="blur" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-              </defs>
-              {areaPath ? <path d={areaPath} fill="url(#paint0_linear_1131_5935)" /> : null}
-              {linePath ? <path d={linePath} stroke="#135bec" strokeLinecap="round" strokeWidth="3.5" filter="url(#neon-glow)" /> : null}
-            </svg>
-
-            <div className="mt-4 flex justify-between px-2">
-              {monthLabels.map((month) => (
-                <p key={month} className={`text-[10px] font-bold uppercase tracking-wider ${
-                  month === monthLabels[monthLabels.length - 1] ? "text-primary" : "text-slate-400 dark:text-slate-600"
-                }`}>
-                  {month}
-                </p>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Recent Sales List */}
-        <div className="flex w-full flex-col gap-5 rounded-3xl border border-slate-200/60 bg-white/80 p-6 shadow-sm backdrop-blur-md dark:border-slate-800/60 dark:bg-slate-900/60 lg:w-[400px]">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-base font-extrabold text-slate-900 dark:text-white sm:text-lg">
-                Últimas Ventas
-              </h2>
-              <p className="text-xs text-slate-400 dark:text-slate-500">Monitoreo en tiempo real</p>
-            </div>
-            <span className="inline-flex size-6 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-xs font-bold text-indigo-600 dark:text-indigo-400 ring-1 ring-indigo-500/10">
-              {recentSales.length}
-            </span>
-          </div>
-
-          <div className="flex flex-col divide-y divide-slate-100 dark:divide-slate-800/60">
-            {recentSales.map((sale) => (
-              <SaleItem key={sale.id} {...sale} />
-            ))}
-            {!recentSales.length && (
-              <div className="py-8 text-center text-sm font-semibold text-slate-400 dark:text-slate-500">
-                {loading ? "Cargando ventas recientes..." : "No hay ventas registradas."}
+      {/* Only show Performance & Sales sections for normal admin/cajero */}
+      {!isSuperAdmin() && (
+        <section className="flex flex-col gap-6 lg:flex-row">
+          {/* Performance Chart with Glow */}
+          <div className="flex flex-1 flex-col gap-5 rounded-3xl border border-slate-200/60 bg-white/80 p-6 shadow-sm backdrop-blur-md dark:border-slate-800/60 dark:bg-slate-900/60">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-extrabold text-slate-900 dark:text-white sm:text-lg">
+                  Rendimiento de Ventas
+                </h2>
+                <p className="text-xs text-slate-400 dark:text-slate-500">Volumen acumulado por mes</p>
               </div>
-            )}
+              <span className="rounded-xl bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary">
+                Últimos 6 meses
+              </span>
+            </div>
+
+            <div className="flex flex-col gap-1.5 mt-2">
+              <p className="text-2xl font-black tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+                {formatGs(chartTotal)}
+              </p>
+              <div className="flex items-center gap-2">
+                <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold ${
+                  chartDelta >= 0 ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400" : "bg-rose-100 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400"
+                }`}>
+                  <Icon className="text-xs" name={chartDelta >= 0 ? "trending_up" : "trending_down"} />
+                  {trendText}
+                </span>
+                <p className="text-xs font-bold text-slate-400 dark:text-slate-500">vs 3 meses previos</p>
+              </div>
+            </div>
+
+            <div className="mt-6 h-[220px] w-full">
+              <svg className="h-full w-full overflow-visible" fill="none" preserveAspectRatio="none" viewBox="0 0 478 150" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient gradientUnits="userSpaceOnUse" id="paint0_linear_1131_5935" x1="236" x2="236" y1="1" y2="149">
+                    <stop stopColor="#135bec" stopOpacity="0.25" />
+                    <stop offset="1" stopColor="#135bec" stopOpacity="0" />
+                  </linearGradient>
+                  <filter id="neon-glow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feGaussianBlur stdDeviation="3.5" result="blur" />
+                    <feMerge>
+                      <feMergeNode in="blur" />
+                      <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                  </filter>
+                </defs>
+                {areaPath ? <path d={areaPath} fill="url(#paint0_linear_1131_5935)" /> : null}
+                {linePath ? <path d={linePath} stroke="#135bec" strokeLinecap="round" strokeWidth="3.5" filter="url(#neon-glow)" /> : null}
+              </svg>
+
+              <div className="mt-4 flex justify-between px-2">
+                {monthLabels.map((month) => (
+                  <p key={month} className={`text-[10px] font-bold uppercase tracking-wider ${
+                    month === monthLabels[monthLabels.length - 1] ? "text-primary" : "text-slate-400 dark:text-slate-600"
+                  }`}>
+                    {month}
+                  </p>
+                ))}
+              </div>
+            </div>
           </div>
-        </div>
-      </section>
+
+          {/* Recent Sales List */}
+          <div className="flex w-full flex-col gap-5 rounded-3xl border border-slate-200/60 bg-white/80 p-6 shadow-sm backdrop-blur-md dark:border-slate-800/60 dark:bg-slate-900/60 lg:w-[400px]">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-extrabold text-slate-900 dark:text-white sm:text-lg">
+                  Últimas Ventas
+                </h2>
+                <p className="text-xs text-slate-400 dark:text-slate-500">Monitoreo en tiempo real</p>
+              </div>
+              <span className="inline-flex size-6 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-xs font-bold text-indigo-600 dark:text-indigo-400 ring-1 ring-indigo-500/10">
+                {recentSales.length}
+              </span>
+            </div>
+
+            <div className="flex flex-col divide-y divide-slate-100 dark:divide-slate-800/60">
+              {recentSales.map((sale) => (
+                <SaleItem key={sale.id} {...sale} />
+              ))}
+              {!recentSales.length && (
+                <div className="py-8 text-center text-sm font-semibold text-slate-400 dark:text-slate-500">
+                  {loading ? "Cargando ventas recientes..." : "No hay ventas registradas."}
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
     </div>
   );
 }

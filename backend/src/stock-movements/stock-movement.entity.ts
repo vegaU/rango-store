@@ -1,7 +1,8 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from "typeorm";
+import { TenantBaseEntity } from "../tenants/tenant-base.entity";
 
 @Entity("stock_movements")
-export class StockMovement {
+export class StockMovement extends TenantBaseEntity {
   @PrimaryGeneratedColumn()
   id!: number;
 

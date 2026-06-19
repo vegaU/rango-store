@@ -1,22 +1,25 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from "typeorm";
 import { TenantBaseEntity } from "../tenants/tenant-base.entity";
 
-@Entity("purchases")
-export class Purchase extends TenantBaseEntity {
+@Entity("providers")
+export class Provider extends TenantBaseEntity {
   @PrimaryGeneratedColumn()
   id!: number;
 
   @Column()
-  supplier!: string;
+  name!: string;
 
   @Column({ nullable: true })
-  paymentMethod?: string;
+  contactName?: string;
 
-  @Column({ type: "decimal", precision: 10, scale: 2 })
-  total!: number;
+  @Column()
+  email!: string;
 
-  @Column({ type: "text", nullable: true })
-  notes?: string;
+  @Column({ nullable: true })
+  phone?: string;
+
+  @Column({ nullable: true })
+  address?: string;
 
   @CreateDateColumn()
   createdAt!: Date;

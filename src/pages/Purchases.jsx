@@ -17,6 +17,7 @@ function findProduct(products, productId) {
 export default function Purchases() {
   const [purchases, setPurchases] = useState([]);
   const [products, setProducts] = useState([]);
+  const [providers, setProviders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -36,13 +37,15 @@ export default function Purchases() {
       setError("");
 
       try {
-        const [purchasesData, productsData] = await Promise.all([
+        const [purchasesData, productsData, providersData] = await Promise.all([
           get("/purchases"),
           get("/products"),
+          get("/providers"),
         ]);
 
         setPurchases(Array.isArray(purchasesData) ? purchasesData : []);
         setProducts(Array.isArray(productsData) ? productsData : []);
+        setProviders(Array.isArray(providersData) ? providersData : []);
       } catch (requestError) {
         console.error("Error cargando compras:", requestError);
         setError("No se pudieron cargar las compras. Intenta de nuevo más tarde.");
@@ -271,13 +274,23 @@ export default function Purchases() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
                   Proveedor
-                  <input
+                  <select
                     value={supplier}
                     onChange={(e) => setSupplier(e.target.value)}
                     className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-                    placeholder="Nombre del proveedor"
-                    type="text"
-                  />
+                  >
+                    <option value="">Seleccionar proveedor</option>
+                    {providers.map((prov) => (
+                      <option key={prov.id} value={prov.name}>
+                        {prov.name}
+                      </option>
+                    ))}
+                  </select>
+                  {providers.length === 0 && (
+                    <span className="mt-1 block text-xs text-rose-500 font-medium">
+                      No hay proveedores registrados. Agrégalos primero en la sección de Proveedores.
+                    </span>
+                  )}
                 </label>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
                   Método de pago

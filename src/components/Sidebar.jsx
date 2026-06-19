@@ -1,19 +1,24 @@
 import { NavLink } from "react-router-dom";
 import Icon from "./Icon";
 import { canAccessRoute } from "../lib/permissions";
+import { getAuthUser } from "../lib/auth";
 
 const navItems = [
   ["dashboard", "Dashboard", "/dashboard"],
-  ["inventory_2", "Inventario", "/stock"],
+  ["inventory_2", "Productos", "/stock"],
   ["category", "Categorías", "/categorias"],
   ["shopping_cart", "Ventas", "/ventas"],
   ["receipt_long", "Compras", "/compras"],
   ["group", "Clientes", "/clientes"],
+  ["store", "Proveedores", "/proveedores"],
   ["bar_chart", "Reportes", "/reportes"],
+  ["domain", "Empresas", "/empresas"],
   ["settings", "Ajustes", "/ajustes"],
 ];
 
 function SidebarContent({ onClose }) {
+  const authUser = getAuthUser();
+  const companyName = authUser?.tenantName ?? authUser?.companyName ?? "Panel de Control";
   const visibleNavItems = navItems.filter(([, , to]) => canAccessRoute(to));
 
   return (
@@ -25,7 +30,7 @@ function SidebarContent({ onClose }) {
         </div>
         <div>
           <h1 className="text-lg font-black tracking-tight bg-gradient-to-r from-slate-900 to-indigo-950 bg-clip-text text-transparent dark:from-white dark:to-indigo-200">
-            Rango Store
+            {companyName}
           </h1>
           <p className="text-[10px] font-bold uppercase tracking-widest text-primary/80 dark:text-primary">
             Control Panel
@@ -40,10 +45,9 @@ function SidebarContent({ onClose }) {
             <li key={label}>
               <NavLink
                 className={({ isActive }) =>
-                  `group flex items-center gap-3 rounded-xl py-3 px-4 transition-all duration-200 ${
-                    isActive
-                      ? "bg-primary/8 font-bold text-primary shadow-sm border-l-4 border-primary pl-3 dark:bg-primary/10"
-                      : "text-slate-500 pl-4 hover:bg-slate-100 hover:text-slate-800 hover:pl-5.5 dark:text-slate-400 dark:hover:bg-slate-800/50 dark:hover:text-white"
+                  `group flex items-center gap-3 rounded-xl py-3 px-4 transition-all duration-200 ${isActive
+                    ? "bg-primary/8 font-bold text-primary shadow-sm border-l-4 border-primary pl-3 dark:bg-primary/10"
+                    : "text-slate-500 pl-4 hover:bg-slate-100 hover:text-slate-800 hover:pl-5.5 dark:text-slate-400 dark:hover:bg-slate-800/50 dark:hover:text-white"
                   }`
                 }
                 onClick={onClose}

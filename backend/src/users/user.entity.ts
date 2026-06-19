@@ -1,16 +1,18 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn, Unique } from "typeorm";
+import { TenantBaseEntity } from "../tenants/tenant-base.entity";
 
-export type UserRole = "admin" | "cajero";
+export type UserRole = "super_admin" | "admin" | "cajero";
 
 @Entity("users")
-export class User {
+@Unique(["email", "tenantId"])
+export class User extends TenantBaseEntity {
   @PrimaryGeneratedColumn()
   id!: number;
 
   @Column()
   name!: string;
 
-  @Column({ unique: true })
+  @Column()
   email!: string;
 
   @Column({ name: "password_hash" })

@@ -7,13 +7,16 @@ import AppLayout from './layouts/AppLayout.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import Customers from './pages/Customers.jsx'
 import Login from './pages/Login.jsx'
+import RegisterCompany from './pages/RegisterCompany.jsx'
 import PlaceholderPage from './pages/PlaceholderPage.jsx'
+import Empresas from './pages/Empresas.jsx'
 import Products from './pages/Products.jsx'
 import Sales from './pages/Sales.jsx'
 import Categories from './pages/Categories.jsx'
 import Reports from './pages/Reports.jsx'
 import Settings from './pages/Settings.jsx'
 import Purchases from './pages/Purchases.jsx'
+import Providers from './pages/Providers.jsx'
 import ProtectedRoute from './routes/ProtectedRoute.jsx'
 import RoleRoute from './routes/RoleRoute.jsx'
 
@@ -23,6 +26,7 @@ createRoot(document.getElementById('root')).render(
       <Routes>
         <Route element={<App />}>
           <Route path="/" element={<Login />} />
+          <Route path="/register" element={<RegisterCompany />} />
 
           <Route element={<ProtectedRoute />}>
             <Route element={<AppLayout />}>
@@ -34,6 +38,8 @@ createRoot(document.getElementById('root')).render(
               <Route path="/compras" element={<RoleRoute><Purchases /></RoleRoute>} />
               <Route path="/reportes" element={<RoleRoute><Reports /></RoleRoute>} />
               <Route path="/ajustes" element={<RoleRoute><Settings /></RoleRoute>} />
+              <Route path="/proveedores" element={<RoleRoute><Providers /></RoleRoute>} />
+              <Route path="/empresas" element={<RoleRoute><Empresas /></RoleRoute>} />
               <Route path="/menu" element={<RoleRoute><PlaceholderPage title="Menu" /></RoleRoute>} />
             </Route>
           </Route>

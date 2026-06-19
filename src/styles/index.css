@@ -6,8 +6,16 @@
 
 @theme {
   --color-primary: #135bec;
-  --color-background-light: #f0f4f8;
+  --color-background-light: #e5e7eb;
   --color-background-dark: #1f2937;
+  --color-input-bg-light: #e5e7eb;
+  --color-input-bg-dark: #111827;
+  --color-input-text-light: #0f172a;
+  --color-input-text-dark: #f9fafb;
+  --color-input-border-light: #cbd5e1;
+  --color-input-border-dark: #4b5563;
+  --color-placeholder-light: #9ca3af;
+  --color-placeholder-dark: #a1a1aa;
 }
 
 body {
@@ -89,27 +97,36 @@ body {
 
 /* Animations */
 @keyframes float {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translate(0, 0) scale(1);
   }
+
   50% {
     transform: translate(10px, -20px) scale(1.05);
   }
 }
 
 @keyframes float-reverse {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translate(0, 0) scale(1.05);
   }
+
   50% {
     transform: translate(-10px, 20px) scale(1);
   }
 }
 
 @keyframes pulse-slow {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 0.25;
   }
+
   50% {
     opacity: 0.45;
   }

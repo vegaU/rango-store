@@ -1,14 +1,15 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from "typeorm";
+import { TenantBaseEntity } from "../tenants/tenant-base.entity";
 
 @Entity("customers")
-export class Customer {
+export class Customer extends TenantBaseEntity {
   @PrimaryGeneratedColumn()
   id!: number;
 
   @Column()
   name!: string;
 
-  @Column({ unique: true })
+  @Column()
   email!: string;
 
   @Column({ nullable: true })
