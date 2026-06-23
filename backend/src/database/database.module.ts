@@ -9,18 +9,31 @@ import { Client } from "pg";
     ConfigModule,
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        type: "postgres",
-        host: configService.get<string>("DB_HOST"),
-        port: configService.get<number>("DB_PORT"),
-        username: configService.get<string>("DB_USERNAME"),
-        password: configService.get<string>("DB_PASSWORD"),
-        database: configService.get<string>("DB_NAME"),
-        ssl: false,
+      useFactory: (configService: ConfigService) => {
+        const databaseUrl = configService.get<string>("DATABASE_URL");
 
-        autoLoadEntities: true,
-        synchronize: false, // We handle all schema sync manually in bootstrapDatabase
-      }),
+        if (databaseUrl) {
+          return {
+            type: "postgres",
+            url: databaseUrl,
+            ssl: true,
+            autoLoadEntities: true,
+            synchronize: false,
+          };
+        }
+
+        return {
+          type: "postgres",
+          host: configService.get<string>("DB_HOST", "localhost"),
+          port: configService.get<number>("DB_PORT", 5432),
+          username: configService.get<string>("DB_USERNAME", "postgres"),
+          password: configService.get<string>("DB_PASSWORD", ""),
+          database: configService.get<string>("DB_NAME", "rango_store"),
+          ssl: false,
+          autoLoadEntities: true,
+          synchronize: false,
+        };
+      },
     }),
   ],
 })
@@ -35,24 +48,24 @@ export class DatabaseModule implements OnModuleInit {
     await this.bootstrapDatabase();
   }
 
-  /**
-   * Repairs the tenants table before TypeORM tries to sync.
-   * Uses raw pg client because TypeORM syncs before onModuleInit,
-   * but we need to ensure the schema is ready.
-   */
   private async repairTenantsTable() {
-    const client = new Client({
-      host: this.configService.get<string>("DB_HOST"),
-      port: this.configService.get<number>("DB_PORT"),
-      user: this.configService.get<string>("DB_USERNAME"),
-      password: this.configService.get<string>("DB_PASSWORD"),
-      database: this.configService.get<string>("DB_NAME"),
-    });
+    console.log("DB_HOST REAL =>", process.env.DB_HOST);
+  console.log("DB_USERNAME REAL =>", process.env.DB_USERNAME);
+    const databaseUrl = this.configService.get<string>("DATABASE_URL");
+    const client = databaseUrl
+      ? new Client({ connectionString: databaseUrl, ssl: true })
+      : new Client({
+          host: this.configService.get<string>("DB_HOST", "localhost"),
+          port: this.configService.get<number>("DB_PORT", 5432),
+          user: this.configService.get<string>("DB_USERNAME", "postgres"),
+          password: this.configService.get<string>("DB_PASSWORD", ""),
+          database: this.configService.get<string>("DB_NAME", "rango_store"),
+        });
+        
 
     try {
       await client.connect();
 
-      // Check if tenants table exists at all
       const tableCheck = await client.query(`
         SELECT EXISTS (
           SELECT FROM information_schema.tables WHERE table_name = 'tenants'
@@ -60,27 +73,21 @@ export class DatabaseModule implements OnModuleInit {
       `);
 
       if (!tableCheck.rows[0].exists) {
-        // Table doesn't exist yet, TypeORM will create it via bootstrap
         console.log("✓ tenants table doesn't exist yet, will be created by bootstrap");
         return;
       }
 
-      // Check if 'name' column exists
       const colCheck = await client.query(`
         SELECT column_name FROM information_schema.columns 
         WHERE table_name = 'tenants' AND column_name = 'name'
       `);
 
       if (colCheck.rows.length === 0) {
-        // Add name column as nullable first
         await client.query(`ALTER TABLE tenants ADD COLUMN name VARCHAR(255)`);
-        // Update any existing rows
         await client.query(`UPDATE tenants SET name = 'Default Store' WHERE name IS NULL`);
-        // Now set NOT NULL
         await client.query(`ALTER TABLE tenants ALTER COLUMN name SET NOT NULL`);
         console.log("✓ Repaired tenants table: added 'name' column with backfill");
       } else {
-        // Column exists, but ensure no NULL values
         const nullCheck = await client.query(
           `SELECT COUNT(*)::int AS cnt FROM tenants WHERE name IS NULL`,
         );
@@ -90,7 +97,6 @@ export class DatabaseModule implements OnModuleInit {
         }
       }
 
-      // Also ensure 'slug' column exists
       const slugCheck = await client.query(`
         SELECT column_name FROM information_schema.columns 
         WHERE table_name = 'tenants' AND column_name = 'slug'
@@ -100,14 +106,12 @@ export class DatabaseModule implements OnModuleInit {
         await client.query(`ALTER TABLE tenants ADD COLUMN slug VARCHAR(255)`);
         await client.query(`UPDATE tenants SET slug = 'default' WHERE slug IS NULL`);
         await client.query(`ALTER TABLE tenants ALTER COLUMN slug SET NOT NULL`);
-        // Add unique constraint
         await client.query(
           `ALTER TABLE tenants ADD CONSTRAINT tenants_slug_unique UNIQUE (slug)`,
         );
         console.log("✓ Repaired tenants table: added 'slug' column with backfill");
       }
 
-      // Ensure default tenant exists
       const existingDefault = await client.query(
         `SELECT id FROM tenants WHERE slug = 'default'`,
       );
@@ -118,7 +122,6 @@ export class DatabaseModule implements OnModuleInit {
         `);
         console.log("✓ Created default tenant (ID: 1, slug: default)");
       } else {
-        // Make sure default tenant has a name
         await client.query(`
           UPDATE tenants SET name = 'Default Store'
           WHERE slug = 'default' AND (name IS NULL OR name = '')
@@ -136,7 +139,6 @@ export class DatabaseModule implements OnModuleInit {
     const queryRunner = this.dataSource.createQueryRunner();
 
     try {
-      // 1. Create tenants table if it doesn't exist (should already exist from repair step)
       await queryRunner.query(`
         CREATE TABLE IF NOT EXISTS tenants (
           id SERIAL PRIMARY KEY,
@@ -148,7 +150,6 @@ export class DatabaseModule implements OnModuleInit {
         )
       `);
 
-      // 2. Ensure tenants has auto-updated updated_at trigger
       await queryRunner.query(`
         CREATE OR REPLACE FUNCTION update_updated_at_column()
         RETURNS TRIGGER AS $$
@@ -159,14 +160,12 @@ export class DatabaseModule implements OnModuleInit {
         $$ LANGUAGE plpgsql
       `);
 
-      // 3. Drop old unique constraint on users.email if exists
       try {
         await queryRunner.query(`ALTER TABLE users DROP CONSTRAINT IF EXISTS users_email_key`);
       } catch {
         // Table may not exist yet, that's ok
       }
 
-      // 4. Add tenant_id columns to existing tables if they don't exist
       const tablesToMigrate = [
         "users",
         "products",
@@ -195,7 +194,6 @@ export class DatabaseModule implements OnModuleInit {
         }
       }
 
-      // 5. Add composite unique index on users(email, tenant_id) if it doesn't exist
       try {
         const idxExists = await queryRunner.query(`
           SELECT indexname FROM pg_indexes 
