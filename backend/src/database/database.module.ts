@@ -53,7 +53,7 @@ export class DatabaseModule implements OnModuleInit {
   console.log("DB_USERNAME REAL =>", process.env.DB_USERNAME);
     const databaseUrl = this.configService.get<string>("DATABASE_URL");
     const client = databaseUrl
-      ? new Client({ connectionString: databaseUrl, ssl: true })
+      ? new Client({ connectionString: databaseUrl, ssl: false })
       : new Client({
           host: this.configService.get<string>("DB_HOST", "localhost"),
           port: this.configService.get<number>("DB_PORT", 5432),
