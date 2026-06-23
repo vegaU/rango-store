@@ -16,7 +16,9 @@ import { Client } from "pg";
           return {
             type: "postgres",
             url: databaseUrl,
-            ssl: true,
+            ssl: {
+              rejectUnauthorized: false,
+            },
             autoLoadEntities: true,
             synchronize: false,
           };
@@ -53,13 +55,21 @@ export class DatabaseModule implements OnModuleInit {
   console.log("DB_USERNAME REAL =>", process.env.DB_USERNAME);
     const databaseUrl = this.configService.get<string>("DATABASE_URL");
     const client = databaseUrl
-      ? new Client({ connectionString: databaseUrl, ssl: false })
+      ? new Client({
+          connectionString: databaseUrl,
+          ssl: {
+            rejectUnauthorized: false,
+          },
+        })
       : new Client({
           host: this.configService.get<string>("DB_HOST", "localhost"),
           port: this.configService.get<number>("DB_PORT", 5432),
           user: this.configService.get<string>("DB_USERNAME", "postgres"),
           password: this.configService.get<string>("DB_PASSWORD", ""),
           database: this.configService.get<string>("DB_NAME", "rango_store"),
+          ssl: {
+            rejectUnauthorized: false,
+          },
         });
         
 
