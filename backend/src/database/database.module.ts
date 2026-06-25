@@ -176,6 +176,33 @@ export class DatabaseModule implements OnModuleInit {
         // Table may not exist yet, that's ok
       }
 
+      // Ensure providers table exists
+      await queryRunner.query(`
+        CREATE TABLE IF NOT EXISTS providers (
+          id SERIAL PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          "contactName" VARCHAR(255),
+          email VARCHAR(255) NOT NULL,
+          phone VARCHAR(255),
+          address VARCHAR(255),
+          "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+
+      // Ensure purchases table exists
+      await queryRunner.query(`
+        CREATE TABLE IF NOT EXISTS purchases (
+          id SERIAL PRIMARY KEY,
+          supplier VARCHAR(255) NOT NULL,
+          "paymentMethod" VARCHAR(255),
+          total DECIMAL(10,2) NOT NULL,
+          notes TEXT,
+          "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+
       const tablesToMigrate = [
         "users",
         "products",
