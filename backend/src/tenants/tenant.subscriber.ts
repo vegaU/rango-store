@@ -11,8 +11,13 @@ export class TenantSubscriber implements EntitySubscriberInterface {
     dataSource.subscribers.push(this);
   }
 
-  beforeInsert(event: InsertEvent<TenantBaseEntity>) {
-    if (event.entity && "tenantId" in event.entity) {
+  beforeInsert(event: InsertEvent<any>) {
+    if (!event.entity) return;
+
+    // Check if the entity metadata has a 'tenantId' column
+    const hasTenantIdColumn = event.metadata.columns.some(col => col.propertyName === 'tenantId');
+    
+    if (hasTenantIdColumn) {
       const tenantId = this.tenantContextService.getTenantId();
       // Only set tenantId from context if the entity doesn't already have one explicitly set
       // Allow tenantId = 0 for super_admin (global users)
