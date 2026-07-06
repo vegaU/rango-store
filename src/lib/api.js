@@ -4,11 +4,20 @@ const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:3002/api";
 
 export function getTenantSlugFromDomain() {
   const hostname = window.location.hostname;
-  // Check if there's a subdomain (e.g., slug.localhost or slug.rango-store.com)
   const parts = hostname.split(".");
+
+  // Only use a subdomain as tenant slug when it looks intentional.
+  // Ignore common app hostnames like www, app, dashboard, etc.
+  const invalidSubdomains = new Set(["www", "app", "dashboard", "admin"]);
+
   if (parts.length >= 3) {
-    return parts[0];
+    const subdomain = parts[0].toLowerCase();
+    if (invalidSubdomains.has(subdomain)) {
+      return null;
+    }
+    return subdomain;
   }
+
   return null;
 }
 

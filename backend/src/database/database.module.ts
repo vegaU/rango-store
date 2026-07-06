@@ -11,14 +11,13 @@ import { Client } from "pg";
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
         const databaseUrl = configService.get<string>("DATABASE_URL");
+        const sslEnabled = configService.get<string>("DB_SSL")?.toLowerCase() === "true";
 
         if (databaseUrl) {
           return {
             type: "postgres",
             url: databaseUrl,
-            ssl: {
-              rejectUnauthorized: false,
-            },
+            ssl: sslEnabled ? { rejectUnauthorized: false } : false,
             autoLoadEntities: true,
             synchronize: false,
           };
@@ -54,12 +53,13 @@ export class DatabaseModule implements OnModuleInit {
     console.log("DB_HOST REAL =>", process.env.DB_HOST);
   console.log("DB_USERNAME REAL =>", process.env.DB_USERNAME);
     const databaseUrl = this.configService.get<string>("DATABASE_URL");
+    const sslEnabled = this.configService.get<string>("DB_SSL")?.toLowerCase() === "true";
+    const sslConfig = sslEnabled ? { rejectUnauthorized: false } : false;
+
     const client = databaseUrl
       ? new Client({
           connectionString: databaseUrl,
-          ssl: {
-            rejectUnauthorized: false,
-          },
+          ssl: sslConfig,
         })
       : new Client({
           host: this.configService.get<string>("DB_HOST", "localhost"),
@@ -67,9 +67,7 @@ export class DatabaseModule implements OnModuleInit {
           user: this.configService.get<string>("DB_USERNAME", "postgres"),
           password: this.configService.get<string>("DB_PASSWORD", ""),
           database: this.configService.get<string>("DB_NAME", "rango_store"),
-          ssl: {
-            rejectUnauthorized: false,
-          },
+          ssl: sslConfig,
         });
         
 
