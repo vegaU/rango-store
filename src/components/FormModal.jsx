@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import Icon from "./Icon";
 import { formatGsInput } from "../utils/currency";
 
@@ -13,43 +13,34 @@ function buildFormState(fields, initialValues = {}) {
   }, {});
 }
 
-export default function FormModal({
-  isOpen,
+function FormModalContent({
   title,
   onClose,
   onSubmit,
   fields,
-  submitLabel = "Guardar",
-  isLoading = false,
-  initialValues = {},
+  submitLabel,
+  isLoading,
+  initialValues,
 }) {
-  const [formData, setFormData] = useState(() => buildFormState(fields, initialValues));
-  const previousIsOpenRef = useRef(false);
+  const [formData, setFormData] = useState(() =>
+    buildFormState(fields, initialValues),
+  );
 
-  useEffect(() => {
-    const wasOpen = previousIsOpenRef.current;
-    previousIsOpenRef.current = isOpen;
+  const handleChange = (event) => {
+    let { name, value } = event.target;
+    const field = fields.find((item) => item.name === name);
 
-    if (isOpen && !wasOpen) {
-      setFormData(buildFormState(fields, initialValues));
-    }
-  }, [fields, initialValues, isOpen]);
-
-  const handleChange = (e) => {
-    let { name, value } = e.target;
-    const field = fields.find((f) => f.name === name);
     if (field?.type === "currency") {
       value = formatGsInput(value);
     }
-    setFormData((prev) => ({ ...prev, [name]: value }));
+
+    setFormData((previous) => ({ ...previous, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSubmit = (event) => {
+    event.preventDefault();
     onSubmit(formData);
   };
-
-  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
@@ -130,5 +121,32 @@ export default function FormModal({
         </form>
       </div>
     </div>
+  );
+}
+
+export default function FormModal({
+  isOpen,
+  title,
+  onClose,
+  onSubmit,
+  fields,
+  submitLabel = "Guardar",
+  isLoading = false,
+  initialValues = {},
+}) {
+  if (!isOpen) {
+    return null;
+  }
+
+  return (
+    <FormModalContent
+      title={title}
+      onClose={onClose}
+      onSubmit={onSubmit}
+      fields={fields}
+      submitLabel={submitLabel}
+      isLoading={isLoading}
+      initialValues={initialValues}
+    />
   );
 }
